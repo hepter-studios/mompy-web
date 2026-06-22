@@ -142,17 +142,7 @@ const classifyLocally = (message) => {
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score)[0];
 
-  if (!route) {
-    return {
-      reply: "What is blocking you: installation, an error, a lesson, a mission, or an idea?",
-      category: "unclear",
-      confidence: 0.35,
-      actions: [
-        { label: "Read Docs", type: "scroll", target: allowedLinks.docs },
-        { label: "Ask Community", type: "external", target: allowedLinks.discord },
-      ],
-    };
-  }
+  if (!route) return null;
 
   const reportDraft = route.report ? buildIssueDraft(message, route.category) : "";
   return {
@@ -167,6 +157,35 @@ const classifyLocally = (message) => {
   };
 };
 
+const callGemini = async (message) => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return null;
+
+  const systemPrompt = `You are Mompy's support assistant. Mompy is a retro Python learning console app for Windows.
+Your job is to help users with installation issues, bugs, lessons, missions, and feature requests.
+Always be concise, friendly, and direct. Reply in the same language the user writes in.
+Only suggest these actions when relevant: read docs, download latest version, open GitHub issue, join Discord, open discussions.
+Never make up information. If unsure, direct to Discord or GitHub Discussions.`;
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ parts: [{ text: message }] }],
+        generationConfig: { maxOutputTokens: 300, temperature: 0.4 },
+      }),
+    }
+  );
+
+  if (!response.ok) return null;
+  const data = await response.json();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  return text ? text.trim() : null;
+};
+
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -179,15 +198,42 @@ module.exports = async function handler(req, res) {
   } catch {
     return res.status(400).json({ error: "Invalid JSON" });
   }
-  const message = String(body.message || "").trim().slice(0, 2000);
 
+  const message = String(body.message || "").trim().slice(0, 2000);
   if (!message) {
     return res.status(400).json({ error: "Missing message" });
   }
 
-  // TODO: When deploying on Vercel, call Grok from here using process.env.GROK_API_KEY.
-  // Keep GITHUB_TOKEN and DISCORD_WEBHOOK_URL server-side only if future issue/Discord
-  // automation is added. Never expose those values to frontend JavaScript.
-  // Required future env vars: GROK_API_KEY, GITHUB_TOKEN, DISCORD_WEBHOOK_URL.
-  return res.status(200).json(classifyLocally(message));
+  // Try local classification first for high-confidence matches
+  const local = classifyLocally(message);
+  if (local && local.confidence >= 0.82) {
+    return res.status(200).json(local);
+  }
+
+  // Fall back to Gemini for low-confidence or unrecognized messages
+  const aiReply = await callGemini(message);
+  if (aiReply) {
+    return res.status(200).json({
+      reply: aiReply,
+      category: local?.category || "general",
+      confidence: 0.9,
+      actions: local?.actions || [
+        { label: "Join Discord", type: "external", target: allowedLinks.discord },
+        { label: "Open Discussions", type: "external", target: allowedLinks.discussions },
+      ],
+    });
+  }
+
+  // Final fallback to local if Gemini fails
+  if (local) return res.status(200).json(local);
+
+  return res.status(200).json({
+    reply: "What is blocking you: installation, an error, a lesson, a mission, or an idea?",
+    category: "unclear",
+    confidence: 0.35,
+    actions: [
+      { label: "Read Docs", type: "scroll", target: allowedLinks.docs },
+      { label: "Ask Community", type: "external", target: allowedLinks.discord },
+    ],
+  });
 };
