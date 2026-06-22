@@ -18,24 +18,48 @@
     <meta property="og:image" content="https://mompy.co/assets/brand/mompy-logo.png" />
     <title>Mompy | Retro Python Learning Console</title>
     <link rel="icon" href="assets/brand/favicon.png" />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=panel-title-align-3" />
   </head>
   <body>
     <div class="site-noise" aria-hidden="true"></div>
     <a class="skip-link" href="#home">Skip to content</a>
 
     <header class="site-header" aria-label="Primary navigation">
-      <a class="brand-mark" href="#home" aria-label="Mompy home">
-        <span>Mompy</span>
-      </a>
+      <div class="brand-cluster">
+        <a class="brand-mark" href="#home" aria-label="Mompy home">
+          <img src="assets/brand/mompy-wordmark.png" alt="Mompy" />
+        </a>
+        <a class="brand-download" href="#" data-link="download" aria-label="Download Mompy">
+          <img src="assets/icons/hard-drive-download.svg" alt="" aria-hidden="true" />
+        </a>
+      </div>
       <nav class="nav-links">
-        <a href="#home">Home</a>
-        <a href="#demo">Demo</a>
-        <a href="#support">Support</a>
-        <a href="#community">Community</a>
-        <a href="#docs">Docs</a>
+        <a href="#home" data-nav-link="home" class="is-active">home</a>
+        <a href="#demo" data-nav-link="demo">demo</a>
+        <a href="#support" data-nav-link="support">support</a>
+        <a href="#community" data-nav-link="community">community</a>
+        <a href="#docs" data-nav-link="docs">docs</a>
       </nav>
-      <span class="header-spacer" aria-hidden="true"></span>
+      <div class="header-actions" aria-label="Quick actions">
+        <form class="site-search" role="search" data-site-search>
+          <label class="visually-hidden" for="site-search-input">Search Mompy</label>
+          <span class="site-search__icon" aria-hidden="true">
+            <img src="assets/icons/search.svg" alt="" />
+          </span>
+          <input
+            id="site-search-input"
+            data-site-search-input
+            type="search"
+            placeholder="Search lessons, missions, Python..."
+            autocomplete="off"
+          />
+          <button type="submit">GO</button>
+          <div class="search-results" data-site-search-results role="listbox" hidden></div>
+        </form>
+        <a href="https://github.com/hepter-studios/mompy" data-link="github" target="_blank" rel="noopener noreferrer">
+          <span>github</span>
+        </a>
+      </div>
     </header>
 
     <main>
@@ -43,29 +67,33 @@
         <div class="screen-shell" data-reveal>
           <img class="screen-frame" src="assets/frames/home.png" alt="" />
           <div class="home-copy">
-            <p class="section-tag">Python training console</p>
-            <h1 id="home-title">Mompy is a retro learning console for Python programming.</h1>
+            <p class="section-tag">Python learning console</p>
+            <h1 id="home-title">
+              <span>Mompy is a retro</span>
+              <span>learning console</span>
+              <span>for Python</span>
+              <span>programming.</span>
+            </h1>
             <p>
-              Learn Python through lessons, missions, progress, feedback, and challenges.
+              Learn Python through lessons, missions, and instant feedback.
             </p>
             <div class="action-row" aria-label="Main actions">
-              <a class="crt-button" href="https://github.com/hepter-studios/mompy/releases">
-                <span class="button-icon" aria-hidden="true">↓</span>
-                Download
+              <a class="crt-button" href="learn.html">
+                <img class="button-icon" src="assets/icons/lightbulb.svg" alt="" aria-hidden="true" />
+                Learn
               </a>
-              <a class="crt-button" href="https://github.com/hepter-studios/mompy">
-                <span class="button-icon" aria-hidden="true">⌘</span>
-                GitHub
+              <a class="crt-button" href="python.html">
+                <img class="button-icon" src="assets/icons/python.svg" alt="" aria-hidden="true" />
+                Python
               </a>
-              <a class="crt-button" href="https://discord.gg/fqxvyGFyfa">
-                <span class="button-icon" aria-hidden="true">◉</span>
-                Join Discord
+              <a class="crt-button sponsor-button" href="https://github.com/sponsors/macksonvictor" data-link="sponsor" target="_blank" rel="noopener noreferrer">
+                <img class="button-icon" src="assets/icons/unicorn.svg" alt="" aria-hidden="true" />
+                Sponsor
               </a>
             </div>
-            <p class="status-line">FREE • OPEN SOURCE • BUILT FOR BEGINNERS</p>
           </div>
           <div class="home-monitor">
-            <img src="assets/illustrations/mompy-mascot.webp" alt="Mompy mascot" />
+            <img src="assets/illustrations/mompy-mascot.webp" alt="Mompy mascot on a CRT monitor" />
           </div>
         </div>
       </section>
@@ -74,42 +102,96 @@
         <div class="screen-shell" data-reveal>
           <img class="screen-frame" src="assets/frames/demo.png" alt="" />
           <div class="side-copy">
-            <p class="section-tag">Demo</p>
-            <h2 id="demo-title">See Mompy in action.</h2>
-            <a class="crt-button large" href="#demo-player">
-              <span class="button-icon" aria-hidden="true">▶</span>
-              Watch Demo
-            </a>
-          </div>
-          <div id="demo-player" class="demo-panel" aria-label="Mompy demo">
-            <div class="demo-topbar">
-              <span>✣ Mompy</span>
-              <span>— ›</span>
+            <p class="section-tag">DEMO</p>
+            <h2 id="demo-title">
+              <span>See Mompy</span>
+              <span>in action.</span>
+            </h2>
+            <div class="action-row side-actions">
+              <button class="crt-button large demo-trigger" type="button" data-demo-trigger aria-label="Watch Mompy demo video">
+                <span class="button-glyph" aria-hidden="true">▶</span>
+                Watch Demo
+              </button>
             </div>
-            <img src="assets/media/mompy-demo.gif" alt="Mompy app demo animation" />
+          </div>
+          <div id="demo-player" class="demo-panel" data-demo-player aria-label="Mompy demo video preview">
+            <video
+              class="demo-video"
+              data-demo-video
+              src="assets/media/mompy-demo.mp4"
+              poster="assets/media/mompy-demo-poster.jpg?v=mission"
+              preload="metadata"
+              playsinline
+              aria-label="Mompy demo video"
+            ></video>
+            <div class="demo-placeholder" data-demo-placeholder hidden>
+              <img src="assets/brand/mompy-wordmark.png" alt="Mompy" />
+              <div class="demo-progress" aria-hidden="true">
+                <span></span>
+              </div>
+              <p>LOADING...</p>
+            </div>
           </div>
         </div>
       </section>
+
+      <div class="demo-modal" data-demo-modal role="dialog" aria-modal="true" aria-labelledby="demo-modal-title" hidden>
+        <div class="demo-modal__panel">
+          <button type="button" class="demo-modal__close" data-demo-close aria-label="Close demo message">Close</button>
+          <p id="demo-modal-title">Demo video coming soon.</p>
+        </div>
+      </div>
 
       <section id="support" class="screen-section screen-support" aria-labelledby="support-title">
         <div class="screen-shell" data-reveal>
           <img class="screen-frame" src="assets/frames/support.png" alt="" />
           <div class="side-copy">
-            <p class="section-tag">Support</p>
-            <h2 id="support-title">Need help?</h2>
-            <p>Report bugs, check releases, and keep downloads trusted.</p>
-            <a class="crt-button large" href="https://github.com/hepter-studios/mompy/issues">
-              Open Issues
-            </a>
+            <p class="section-tag">SUPPORT</p>
+            <h2 id="support-title">
+              <span>Need help?</span>
+              <span>Ask Mompy Support.</span>
+            </h2>
+            <p>
+              Describe your issue. Mompy will point you to docs, GitHub issues,
+              discussions, or community help.
+            </p>
           </div>
-          <div class="support-console">
-            <div class="console-art">
-              <img src="assets/illustrations/support-mompy.webp" alt="Mompy support monitor" />
-            </div>
-            <div class="console-list">
-              <a href="https://github.com/hepter-studios/mompy/issues">GitHub Issues</a>
-              <a href="https://github.com/hepter-studios/mompy/releases">Releases</a>
-              <a href="https://github.com/hepter-studios/mompy/security/policy">Security</a>
+          <div class="support-console" data-support-widget>
+            <div class="support-terminal" aria-label="Mompy Support assistant">
+              <div class="support-terminal__header">
+                <div>
+                  <strong>Support</strong>
+                </div>
+              </div>
+              <div class="support-terminal__body">
+                <aside class="support-assistant-card" aria-label="Mompy Assistant">
+                  <img src="public/assets/mompy-support-side.png" alt="Mompy Assistant" />
+                </aside>
+                <div class="support-chat" data-support-chat aria-live="polite">
+                  <div class="support-message is-assistant">
+                    <span>Mompy Assistant</span>
+                    <p>
+                      Tell me what happened. I can help with installation,
+                      errors, lessons, missions, or feedback.
+                    </p>
+                  </div>
+                </div>
+                <div class="support-action-bar" data-support-actions></div>
+                <form class="support-form" data-support-form>
+                  <label class="visually-hidden" for="support-input">Describe your support problem</label>
+                  <span class="support-form__icon" aria-hidden="true">
+                    <img src="assets/icons/search.svg" alt="" />
+                  </span>
+                  <input
+                    id="support-input"
+                    data-support-input
+                    type="text"
+                    placeholder="Type your problem here..."
+                    autocomplete="off"
+                  />
+                  <button type="submit">Send</button>
+                </form>
+              </div>
             </div>
           </div>
         </div>
@@ -119,15 +201,86 @@
         <div class="screen-shell" data-reveal>
           <img class="screen-frame" src="assets/frames/community.png" alt="" />
           <div class="side-copy">
-            <p class="section-tag">Community</p>
-            <h2 id="community-title">Build with the community.</h2>
-            <p>Share progress, get feedback, and join other learners.</p>
-            <a class="crt-button large" href="https://discord.gg/fqxvyGFyfa">
-              Join Discord
-            </a>
+            <p class="section-tag">COMMUNITY</p>
+            <h2 id="community-title">Join the Mompy community.</h2>
+            <p>
+              Find your first steps, share progress, follow updates, and help
+              improve Mompy with other learners.
+            </p>
+            <div class="community-actions" aria-label="Community actions">
+              <a class="crt-button large" href="https://discord.gg/fqxvyGFyfa" data-link="discord">
+                Join Community
+              </a>
+              <a class="crt-button large" href="https://github.com/hepter-studios/mompy/discussions" data-link="discussions">
+                Open Discussions
+              </a>
+              <a class="crt-button large is-subtle" href="https://github.com/hepter-studios/mompy" data-link="github">
+                Contribute
+              </a>
+            </div>
           </div>
-          <div class="community-console">
-            <img src="assets/illustrations/community-mompy.webp" alt="Mompy community channels" />
+          <div class="community-console" aria-label="Mompy Community board">
+            <div class="community-board">
+              <div class="community-board__header">
+                <div>
+                  <span>Mompy Community</span>
+                  <strong>OPEN</strong>
+                </div>
+              </div>
+              <div class="community-board__items">
+                <article class="community-board__item">
+                  <span>01</span>
+                  <div>
+                    <h3>Getting Started</h3>
+                    <p>New to Mompy? Start here and find your first steps.</p>
+                  </div>
+                </article>
+                <article class="community-board__item">
+                  <span>02</span>
+                  <div>
+                    <h3>Success Stories</h3>
+                    <p>Share what you learned, built, or completed with Mompy.</p>
+                  </div>
+                </article>
+                <article class="community-board__item">
+                  <span>03</span>
+                  <div>
+                    <h3>News / Updates</h3>
+                    <p>Follow releases, roadmap changes, and project progress.</p>
+                  </div>
+                  <a href="https://github.com/hepter-studios/mompy/releases" target="_blank" rel="noopener noreferrer">View Releases</a>
+                </article>
+                <article class="community-board__item">
+                  <span>04</span>
+                  <div>
+                    <h3>External Communities</h3>
+                    <p>Explore the wider Python learning ecosystem.</p>
+                  </div>
+                  <a href="https://www.python.org/community/" target="_blank" rel="noopener noreferrer">Python Community</a>
+                </article>
+                <article class="community-board__item">
+                  <span>05</span>
+                  <div>
+                    <h3>Discussions</h3>
+                    <p>Ask questions, suggest ideas, and join project conversations.</p>
+                  </div>
+                  <a href="https://github.com/hepter-studios/mompy/discussions" data-link="discussions">Open Discussions</a>
+                </article>
+                <article class="community-board__item">
+                  <span>06</span>
+                  <div>
+                    <h3>Contributing</h3>
+                    <p>Help improve lessons, docs, design, bugs, packaging, and ideas.</p>
+                  </div>
+                  <a href="https://github.com/hepter-studios/mompy" data-link="github">Contribute on GitHub</a>
+                </article>
+              </div>
+              <div class="community-socials" aria-label="Follow Mompy">
+                <span>Follow Mompy:</span>
+                <a href="https://github.com/hepter-studios/mompy" data-link="github">GitHub</a>
+                <a href="https://discord.gg/fqxvyGFyfa" data-link="discord">Discord</a>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -136,30 +289,117 @@
         <div class="screen-shell" data-reveal>
           <img class="screen-frame" src="assets/frames/docs.png" alt="" />
           <div class="side-copy">
-            <p class="section-tag">Docs</p>
-            <h2 id="docs-title">Learn step by step.</h2>
-            <p>Guides, lessons, and missions in one place.</p>
-            <a class="crt-button large" href="https://github.com/hepter-studios/mompy#readme">
+            <p class="section-tag">DOCS</p>
+            <h2 id="docs-title">Understand Mompy.</h2>
+            <p>
+              Read the official documentation for installing, using,
+              troubleshooting, contributing, and following Mompy as it evolves.
+            </p>
+            <a class="crt-button large" href="docs.html">
               Read Docs
             </a>
           </div>
-          <div class="docs-console">
-            <div class="docs-titlebar">▣ Mompy Docs</div>
-            <img src="assets/illustrations/docs-mompy.webp" alt="Mompy docs preview" />
-            <div class="docs-tabs">
-              <a href="https://github.com/hepter-studios/mompy#readme">Guides</a>
-              <a href="https://github.com/hepter-studios/mompy#curriculum">Lessons</a>
-              <a href="https://github.com/hepter-studios/mompy/issues">Missions</a>
+          <div class="docs-console" aria-label="Mompy Docs index">
+            <div class="docs-index">
+              <div class="docs-index__header">
+                <span>Mompy Docs</span>
+              </div>
+              <div class="docs-index__items">
+                <a class="docs-index__item" href="docs.html#getting-started">
+                  <span>01</span>
+                  <div>
+                    <h3>Getting Started</h3>
+                    <p>Install Mompy and launch your first session.</p>
+                  </div>
+                </a>
+                <a class="docs-index__item" href="docs.html#using-the-app">
+                  <span>02</span>
+                  <div>
+                    <h3>Using Mompy</h3>
+                    <p>Understand lessons, missions, feedback, and progress.</p>
+                  </div>
+                </a>
+                <a class="docs-index__item" href="docs.html#troubleshooting">
+                  <span>03</span>
+                  <div>
+                    <h3>Troubleshooting</h3>
+                    <p>Fix common issues and report problems clearly.</p>
+                  </div>
+                </a>
+                <a class="docs-index__item" href="docs.html#development">
+                  <span>04</span>
+                  <div>
+                    <h3>Development</h3>
+                    <p>Run the project, test changes, and understand the architecture.</p>
+                  </div>
+                </a>
+                <a class="docs-index__item" href="docs.html#contributing">
+                  <span>05</span>
+                  <div>
+                    <h3>Contributing</h3>
+                    <p>Help improve docs, lessons, design, packaging, and code.</p>
+                  </div>
+                </a>
+                <a class="docs-index__item" href="docs.html#roadmap">
+                  <span>06</span>
+                  <div>
+                    <h3>Roadmap</h3>
+                    <p>See what is available now and what is still being improved.</p>
+                  </div>
+                </a>
+              </div>
             </div>
           </div>
-          <footer class="site-footer">
-            <span>Mompy</span>
-            <span>by Hepter Studios</span>
-          </footer>
         </div>
       </section>
+
+      <footer id="footer" class="global-footer" data-reveal>
+        <div class="footer-grid">
+          <div class="footer-brand">
+            <a class="brand-mark" href="#home" aria-label="Mompy home">
+              <img src="assets/brand/mompy-wordmark.png" alt="Mompy" />
+            </a>
+            <p>A retro Python learning console for beginners.</p>
+          </div>
+          <div class="footer-column">
+            <h3>Product</h3>
+            <a href="#home">Home</a>
+            <a href="learn.html">Learn</a>
+            <a href="#demo">Demo</a>
+            <a href="https://github.com/hepter-studios/mompy/releases/download/v0.1.1/MompySetup-v0.1.1.exe" data-link="download" download="MompySetup-v0.1.1.exe">Download</a>
+            <a href="https://github.com/hepter-studios/mompy" data-link="github">GitHub</a>
+          </div>
+          <div class="footer-column">
+            <h3>Resources</h3>
+            <a href="docs.html">Docs</a>
+            <a href="python.html">Python Guide</a>
+            <a href="#support">Support</a>
+            <a href="#community">Community</a>
+            <a href="https://github.com/hepter-studios/mompy/issues" data-link="issues">Issues</a>
+          </div>
+          <div class="footer-column">
+            <h3>Get Started</h3>
+            <a href="https://github.com/hepter-studios/mompy/releases/download/v0.1.1/MompySetup-v0.1.1.exe" data-link="download" download="MompySetup-v0.1.1.exe">Download</a>
+            <a href="https://discord.gg/fqxvyGFyfa" data-link="discord">Join Discord</a>
+            <a href="https://github.com/sponsors/macksonvictor" data-link="sponsor">Sponsor Mompy 🦄</a>
+          </div>
+          <div class="footer-column">
+            <h3>Project</h3>
+            <a href="https://github.com/hepter-studios/mompy/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">Contributing</a>
+            <a href="https://github.com/hepter-studios/mompy/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer">Security</a>
+            <a href="https://github.com/hepter-studios/mompy/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a>
+            <a href="docs.html#roadmap">Roadmap</a>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <span>© 2026 Mompy</span>
+          <span>A Hepter Studios project</span>
+          <a href="privacy.html">Privacy Policy</a>
+          <a href="terms.html">Terms of Use</a>
+        </div>
+      </footer>
     </main>
 
-    <script src="app.js" defer></script>
+    <script src="app.js?v=home-search-2" defer></script>
   </body>
 </html>

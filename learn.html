@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Learn Python with Mompy through missions, examples, mistakes, and official references."
+    />
+    <meta name="theme-color" content="#050905" />
+    <title>Learn Python with Mompy | Retro Python Learning Console</title>
+    <link rel="icon" href="assets/brand/favicon.png" />
+    <link rel="stylesheet" href="styles.css?v=learn-page-1" />
+  </head>
+  <body class="learn-page">
+    <div class="site-noise" aria-hidden="true"></div>
+    <a class="skip-link" href="#learn-main">Skip to content</a>
+
+    <header class="site-header learn-header" aria-label="Learn navigation">
+      <a class="brand-mark" href="index.html#home" aria-label="Mompy home">
+        <img src="assets/brand/mompy-wordmark.png" alt="Mompy" />
+      </a>
+      <nav class="nav-links learn-header__nav" aria-label="Back to Mompy">
+        <a href="index.html#home">home</a>
+      </nav>
+      <div class="header-actions" aria-label="Learn actions">
+        <form class="site-search" role="search" data-site-search data-learn-search>
+          <label class="visually-hidden" for="site-search-input">Search Python topics</label>
+          <span class="site-search__icon" aria-hidden="true">
+            <img src="assets/icons/search.svg" alt="" />
+          </span>
+          <input
+            id="site-search-input"
+            data-site-search-input
+            data-learn-search-input
+            type="search"
+            placeholder="Search Python topics, missions, examples..."
+            autocomplete="off"
+          />
+          <button type="submit">GO</button>
+          <div class="search-results" data-site-search-results role="listbox" hidden></div>
+        </form>
+        <a href="https://github.com/hepter-studios/mompy" data-link="github" target="_blank" rel="noopener noreferrer">
+          <span>github</span>
+        </a>
+      </div>
+    </header>
+
+    <main id="learn-main" class="learn-main" data-learn-page>
+      <section class="learn-hero" aria-labelledby="learn-title">
+        <p class="section-tag">LEARN PYTHON</p>
+        <h1 id="learn-title">Learn Python with Mompy.</h1>
+        <p>
+          A visual Python guide with examples, missions, mistakes, and official
+          references — organized for beginners.
+        </p>
+        <div class="learn-hero__actions" aria-label="Learning shortcuts">
+          <a class="crt-button" href="#start-here">Start from Basics</a>
+          <a class="crt-button" href="#mission-path">View Mission Path</a>
+          <a class="crt-button" href="#official-python">Official Python Resources</a>
+        </div>
+      </section>
+
+      <div class="learn-layout">
+        <aside class="learn-sidebar" aria-label="Python topic navigation">
+          <p class="learn-sidebar__title">Topics</p>
+          <nav data-learn-topic-nav></nav>
+        </aside>
+
+        <div class="learn-content">
+          <section id="start-here" class="learn-panel" data-learn-section>
+            <p class="section-tag">START HERE</p>
+            <h2>How to use this page.</h2>
+            <ul class="start-list">
+              <li>Read the short explanation.</li>
+              <li>Study the example.</li>
+              <li>Try the idea inside Mompy.</li>
+              <li>Check the official Python link when you want to go deeper.</li>
+            </ul>
+          </section>
+
+          <section id="mission-path" class="learn-panel" data-learn-section>
+            <div class="learn-section-head">
+              <div>
+                <p class="section-tag">MOMPY MISSION PATH</p>
+                <h2>Follow the blocks in order.</h2>
+              </div>
+              <p>Install Mompy to practice each block.</p>
+            </div>
+            <div class="learning-blocks" data-learning-blocks></div>
+          </section>
+
+          <section id="topics" class="learn-panel" data-learn-section>
+            <div class="learn-section-head">
+              <div>
+                <p class="section-tag">PYTHON TOPICS REFERENCE</p>
+                <h2>Use examples more than theory.</h2>
+              </div>
+              <p data-learn-search-count>Showing all topics.</p>
+            </div>
+            <div class="topic-groups" data-python-topics></div>
+          </section>
+
+          <section id="official-python" class="learn-panel" data-learn-section>
+            <div class="learn-section-head">
+              <div>
+                <p class="section-tag">OFFICIAL PYTHON</p>
+                <h2>Official Python resources.</h2>
+              </div>
+              <p>
+                Mompy teaches with missions. These official resources help you
+                go deeper when you are ready.
+              </p>
+            </div>
+            <div class="official-grid" data-python-resources></div>
+          </section>
+        </div>
+
+        <aside class="learn-mini-panel" aria-label="Mompy learning notes">
+          <img src="assets/illustrations/mompy-mascot.webp" alt="Mompy mascot" />
+          <h2>Practice loop</h2>
+          <p>Read, copy, try in Mompy, then return with a better question.</p>
+          <a href="https://github.com/hepter-studios/mompy/releases/download/v0.1.1/MompySetup-v0.1.1.exe" data-link="download" download="MompySetup-v0.1.1.exe">
+            Download Mompy
+          </a>
+        </aside>
+      </div>
+    </main>
+
+    <footer class="learn-footer">
+      <div class="footer-grid">
+        <div class="footer-brand">
+        <a class="brand-mark" href="index.html#home" aria-label="Mompy home">
+          <img src="assets/brand/mompy-wordmark.png" alt="Mompy" />
+        </a>
+        <p>A retro Python learning console for beginners.</p>
+        </div>
+        <div class="footer-column">
+          <h3>Product</h3>
+          <a href="index.html#home">Home</a>
+          <a href="learn.html">Learn</a>
+          <a href="index.html#demo">Demo</a>
+          <a href="https://github.com/hepter-studios/mompy/releases/download/v0.1.1/MompySetup-v0.1.1.exe" data-link="download" download="MompySetup-v0.1.1.exe">Download</a>
+          <a href="https://github.com/hepter-studios/mompy" data-link="github">GitHub</a>
+        </div>
+        <div class="footer-column">
+          <h3>Resources</h3>
+          <a href="docs.html">Docs</a>
+          <a href="python.html">Python Guide</a>
+          <a href="index.html#support">Support</a>
+          <a href="index.html#community">Community</a>
+          <a href="https://github.com/hepter-studios/mompy/issues" data-link="issues">Issues</a>
+        </div>
+        <div class="footer-column">
+          <h3>Get Started</h3>
+          <a href="https://github.com/hepter-studios/mompy/releases/download/v0.1.1/MompySetup-v0.1.1.exe" data-link="download" download="MompySetup-v0.1.1.exe">Download</a>
+          <a href="https://discord.gg/fqxvyGFyfa" data-link="discord">Join Discord</a>
+          <a href="https://github.com/sponsors/macksonvictor" data-link="sponsor">Sponsor Mompy 🦄</a>
+        </div>
+        <div class="footer-column">
+          <h3>Project</h3>
+          <a href="https://github.com/hepter-studios/mompy/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer">Contributing</a>
+          <a href="https://github.com/hepter-studios/mompy/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer">Security</a>
+          <a href="https://github.com/hepter-studios/mompy/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a>
+          <a href="docs.html#roadmap">Roadmap</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2026 Mompy</span>
+        <span>A Hepter Studios project</span>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms of Use</a>
+      </div>
+    </footer>
+
+    <script src="app.js?v=learn-page-1" defer></script>
+  </body>
+</html>
