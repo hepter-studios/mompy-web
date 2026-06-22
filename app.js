@@ -816,7 +816,7 @@ demoModal?.addEventListener("click", (event) => {
 });
 
 const SUPPORT_ASSISTANT_ENDPOINT = "/api/support/assistant";
-const SUPPORT_BACKEND_TIMEOUT_MS = 1800;
+const SUPPORT_BACKEND_TIMEOUT_MS = 12000;
 const supportAllowedLinks = {
   docs: "#docs",
   learningPath: "learn.html",
@@ -926,6 +926,18 @@ const supportRoutes = [
 
 let supportReportDraft = "";
 
+const scrollSupportChatToLatest = () => {
+  if (!supportChat) return;
+
+  supportChat.scrollTop = supportChat.scrollHeight;
+  window.requestAnimationFrame(() => {
+    supportChat.scrollTop = supportChat.scrollHeight;
+  });
+  window.setTimeout(() => {
+    supportChat.scrollTop = supportChat.scrollHeight;
+  }, 80);
+};
+
 const appendSupportMessage = (kind, text, author = kind === "user" ? "You" : "Mompy Assistant") => {
   if (!supportChat) return;
 
@@ -940,7 +952,7 @@ const appendSupportMessage = (kind, text, author = kind === "user" ? "You" : "Mo
 
   message.append(label, body);
   supportChat.append(message);
-  supportChat.scrollTop = supportChat.scrollHeight;
+  scrollSupportChatToLatest();
 };
 
 const buildSupportReport = (message) => [
@@ -1127,6 +1139,7 @@ const respondToSupportMessage = async (message) => {
 
   appendSupportMessage("assistant", response.reply);
   response.actions.forEach(addSupportAction);
+  scrollSupportChatToLatest();
 };
 
 supportForm?.addEventListener("submit", (event) => {
