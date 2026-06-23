@@ -834,13 +834,11 @@ const supportRoutes = [
     category: "bug",
     confidence: 0.88,
     keywords: ["bug", "error", "crash", "broken", "fail", "not working", "erro", "travou", "quebrado", "falha", "bugou", "não funciona", "nao funciona"],
-    reply: "This looks like a bug or crash. I can prepare a clean report and send you to the right GitHub page.",
+    reply: "That may be a bug, but I need a little more detail first. What screen or mission were you on, and what did Mompy show?",
     reportKind: "bug",
     actions: [
-      { label: "Generate Report", type: "issue_draft" },
-      { label: "Copy Report", type: "copy" },
-      { label: "Open GitHub Issue", type: "external", target: supportAllowedLinks.newIssue },
       { label: "Open Discussions", type: "external", target: supportAllowedLinks.discussions },
+      { label: "Read Docs", type: "scroll", target: supportAllowedLinks.docs },
     ],
   },
   {
@@ -858,13 +856,12 @@ const supportRoutes = [
     category: "startup",
     confidence: 0.82,
     keywords: ["open", "start", "run", "launch", "startup", "abrir", "abre", "não abre", "nao abre", "mompy não abre", "mompy nao abre", "iniciar", "rodar", "executar"],
-    reply: "This looks like a startup issue. Check the docs and latest release first; if it still fails, open a report.",
+    reply: "This sounds like a startup issue. Tell me what happens when you open Mompy: blank screen, crash, error text, or nothing at all?",
     reportKind: "startup",
     actions: [
       { label: "Read Docs", type: "scroll", target: supportAllowedLinks.docs },
       { label: "Download Latest Version", type: "external", target: supportAllowedLinks.releases },
-      { label: "Copy Report", type: "copy" },
-      { label: "Open GitHub Issue", type: "external", target: supportAllowedLinks.newIssue },
+      { label: "Open Discussions", type: "external", target: supportAllowedLinks.discussions },
     ],
   },
   {
@@ -893,12 +890,11 @@ const supportRoutes = [
     category: "feature request",
     confidence: 0.82,
     keywords: ["idea", "suggestion", "feature", "ideia", "sugestão", "sugestao", "recurso", "melhoria"],
-    reply: "Good feature-request territory. Shape the idea in Discussions before it becomes an issue.",
+    reply: "That sounds like feedback for improving Mompy. Tell me what you expected Mompy to explain, and what it showed instead.",
     reportKind: "feature",
     actions: [
       { label: "Open Discussions", type: "external", target: supportAllowedLinks.discussions },
-      { label: "Create Feature Request Draft", type: "issue_draft" },
-      { label: "Copy Report", type: "copy" },
+      { label: "Open Learning Path", type: "external", target: supportAllowedLinks.learningPath },
     ],
   },
   {
@@ -928,18 +924,18 @@ let supportReportDraft = "";
 let supportConversationHistory = [];
 
 const portugueseSupportReplies = {
-  bug: "Isso parece um bug ou travamento. Posso preparar um relatório limpo e te levar para a página certa do GitHub.",
+  bug: "Pode ser um bug, mas preciso entender melhor primeiro. Em qual tela ou missão isso aconteceu, e que mensagem o Mompy mostrou?",
   installation: "Isso parece problema de instalação. Comece pela documentação e confirme se está usando a versão mais recente.",
-  startup: "Isso parece problema para abrir ou iniciar o Mompy. Veja a documentação e a versão mais recente; se continuar, abra um relatório.",
+  startup: "Isso parece problema para abrir o Mompy. Me diga o que acontece quando você tenta iniciar: tela preta, fecha sozinho, aparece algum texto de erro ou nada acontece?",
   lesson: "Isso parece uma dúvida de aula. Abra a trilha de aprendizado primeiro; se ainda travar, use a documentação ou a comunidade.",
   mission: "Isso parece uma dúvida de missão. Use a trilha de aprendizado e a documentação; se perguntar na comunidade, mande o número da missão.",
-  "feature request": "Boa ideia para melhoria. O melhor caminho é organizar a sugestão nas Discussions antes de virar uma issue.",
+  "feature request": "Entendi como sugestão. Me conta como você queria que o Mompy explicasse melhor: mostrar a linha, o motivo, o resultado esperado ou uma dica passo a passo?",
   documentation: "Isso parece relacionado à documentação. Comece pela seção de docs ou pelo guia de Python.",
   "account/community": "Para conversa rápida, use o Discord. Para perguntas que precisam ficar registradas, use o GitHub Discussions.",
 };
 
 const isPortugueseSupportMessage = (text) =>
-  /\b(oi|ola|olhe|bom dia|boa tarde|boa noite|voce|nao|sem|so|estou|testando|teste|conversa|normal|erro|ajuda|instalar|abrir|missao|licao|problema)\b/i.test(
+  /\b(oi|ola|olhe|bom dia|boa tarde|boa noite|voce|tu|nao|sem|so|estou|testando|teste|conversa|normal|erro|ajuda|instalar|abrir|missao|licao|problema|sugestao|melhoria|coisa|entendi|disse)\b/i.test(
     normalizeSearchText(text)
   );
 
@@ -948,6 +944,11 @@ const isSupportGreetingOnly = (text) =>
 
 const hasSupportBugNegation = (text) =>
   /\b(sem|no|not|nao)\s+(bug|erro|crash|problema|problem|issue)\b/i.test(normalizeSearchText(text));
+
+const looksLikeSupportFeedbackSuggestion = (text) =>
+  /\b(sugestao|melhoria|melhor|dica|explicar|explica|linha|motivo|esperava|deveria|feedback|nao e bug|nao eh bug)\b/i.test(
+    normalizeSearchText(text)
+  );
 
 const scrollSupportChatToLatest = () => {
   if (!supportChat) return;
@@ -1052,9 +1053,14 @@ const getLocalSupportResponse = (message) => {
 
   if (isSupportGreetingOnly(message)) {
     return {
-      reply: portuguese
-        ? "Oi. Me conta o que aconteceu no Mompy: instalacao, erro, missao, aula ou uma ideia? Se puder, diga tambem em qual tela isso aparece."
-        : "Hi. Tell me what happened in Mompy: installation, an error, a mission, a lesson, or an idea? If you can, mention which screen shows it.",
+      reply:
+        supportConversationHistory.length > 1
+          ? portuguese
+            ? "Estou aqui. Me diz em uma frase o que você quer fazer agora no Mompy, ou qual parte ficou confusa."
+            : "I'm here. Tell me in one sentence what you want to do next in Mompy, or which part felt confusing."
+          : portuguese
+            ? "Oi. Me conta o que aconteceu no Mompy: instalação, erro, missão, aula ou uma ideia? Se puder, diga também em qual tela isso aparece."
+            : "Hi. Tell me what happened in Mompy: installation, an error, a mission, a lesson, or an idea? If you can, mention which screen shows it.",
       category: "unclear",
       confidence: 0.35,
       actions: [
@@ -1066,13 +1072,15 @@ const getLocalSupportResponse = (message) => {
   }
 
   const bugNegated = hasSupportBugNegation(message);
+  const feedbackSuggestion = looksLikeSupportFeedbackSuggestion(message);
   const route = supportRoutes
     .map((item) => ({
       ...item,
       score:
         bugNegated && ["bug", "startup"].includes(item.category)
           ? 0
-          : item.keywords.filter((keyword) => normalized.includes(normalizeSearchText(keyword))).length,
+          : item.keywords.filter((keyword) => normalized.includes(normalizeSearchText(keyword))).length +
+            (feedbackSuggestion && item.category === "feature request" ? 2 : 0),
     }))
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score || b.confidence - a.confidence)[0];
@@ -1182,7 +1190,7 @@ const addSupportAction = (action) => {
 
 const respondToSupportMessage = async (message) => {
   clearSupportActions();
-  const pendingMessage = appendSupportMessage("assistant", "Thinking");
+  const pendingMessage = appendSupportMessage("assistant", isPortugueseSupportMessage(message) ? "Pensando" : "Thinking");
   pendingMessage?.classList.add("is-thinking");
 
   const response = await requestSupportAssistant(message);

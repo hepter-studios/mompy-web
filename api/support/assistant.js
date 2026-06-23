@@ -6,6 +6,15 @@ const GEMINI_FALLBACK_MODELS = [
   "gemini-2.5-flash-lite",
 ].filter((model, index, list) => model && list.indexOf(model) === index);
 
+const MOMPY_STATIC_CONTEXT = `
+Mompy is a retro Python learning console for beginners. It teaches through lessons, missions, a code editor, validation feedback, and locally saved progress.
+The app repository is hepter-studios/mompy. The website repository is hepter-studios/mompy-web.
+Main product areas: Home, Learn, Python Guide, Demo, Support, Community, Docs, Download, GitHub.
+Users can struggle with installation/opening, mission answers, lesson understanding, Python syntax, validation messages, unclear error feedback, downloads, or ideas for improving the app.
+When a learner says Mompy keeps saying an answer is wrong without explaining where, treat it as product feedback/feature request unless they clearly report a crash or broken app. Help them describe the expected improvement: line location, expected output, what they typed, the exact mission, and the message Mompy showed.
+Support should first help the user understand the problem and ask useful follow-up questions. Escalation to Hepter Studios should happen only when there is enough context or when the user clearly asks to report it.
+`;
+
 const allowedLinks = {
   docs: "#docs",
   learningPath: "learn.html",
@@ -128,8 +137,7 @@ const routes = [
     actions: [
       { label: "Read Docs", type: "scroll", target: allowedLinks.docs },
       { label: "Download Latest Version", type: "external", target: allowedLinks.releases },
-      { label: "Copy Report", type: "copy" },
-      { label: "Open GitHub Issue", type: "external", target: allowedLinks.newIssue },
+      { label: "Open Discussions", type: "external", target: allowedLinks.discussions },
     ],
   },
   {
@@ -140,10 +148,8 @@ const routes = [
     report: true,
     createIssue: false,
     actions: [
-      { label: "Generate Report", type: "issue_draft" },
-      { label: "Copy Report", type: "copy" },
-      { label: "Open GitHub Issue", type: "external", target: allowedLinks.newIssue },
       { label: "Open Discussions", type: "external", target: allowedLinks.discussions },
+      { label: "Read Docs", type: "scroll", target: allowedLinks.docs },
     ],
   },
   {
@@ -176,8 +182,7 @@ const routes = [
     report: true,
     actions: [
       { label: "Open Discussions", type: "external", target: allowedLinks.discussions },
-      { label: "Create Feature Request Draft", type: "issue_draft" },
-      { label: "Copy Report", type: "copy" },
+      { label: "Open Learning Path", type: "external", target: allowedLinks.learningPath },
     ],
   },
   {
@@ -298,19 +303,19 @@ const fetchWithTimeout = async (url, options = {}, timeoutMs = 6500) => {
   }
 };
 
-const fetchRepoReadme = async (repo) => {
+const fetchRepoReadme = async (repo, timeoutMs = 1400) => {
   const response = await fetchWithTimeout(`https://api.github.com/repos/${repo}/readme`, {
     headers: githubHeaders(),
-  });
+  }, timeoutMs);
   if (!response.ok) return "";
   const data = await response.json();
   return Buffer.from(data.content || "", data.encoding === "base64" ? "base64" : "utf8").toString("utf8");
 };
 
-const fetchRepoTreeSummary = async (repo) => {
+const fetchRepoTreeSummary = async (repo, timeoutMs = 1400) => {
   const response = await fetchWithTimeout(`https://api.github.com/repos/${repo}/git/trees/main?recursive=1`, {
     headers: githubHeaders(),
-  });
+  }, timeoutMs);
   if (!response.ok) return "";
   const data = await response.json();
   const paths = (data.tree || [])
@@ -330,29 +335,35 @@ const getRepositoryContext = async () => {
   }
 
   try {
-    const [appReadme, appTree, webReadme] = await Promise.all([
-      fetchRepoReadme(MOMPY_APP_REPO),
-      fetchRepoTreeSummary(MOMPY_APP_REPO),
-      fetchRepoReadme(MOMPY_WEB_REPO),
+    const [appReadmeResult, appTreeResult, webReadmeResult] = await Promise.allSettled([
+      fetchRepoReadme(MOMPY_APP_REPO, 1300),
+      fetchRepoTreeSummary(MOMPY_APP_REPO, 1300),
+      fetchRepoReadme(MOMPY_WEB_REPO, 1300),
     ]);
+    const appReadme = appReadmeResult.status === "fulfilled" ? appReadmeResult.value : "";
+    const appTree = appTreeResult.status === "fulfilled" ? appTreeResult.value : "";
+    const webReadme = webReadmeResult.status === "fulfilled" ? webReadmeResult.value : "";
 
     repositoryContextCache = truncate(
       [
+        "Fast Mompy product context:",
+        MOMPY_STATIC_CONTEXT.trim(),
+        "",
         "Mompy app repository context:",
-        truncate(appReadme, 2600),
+        truncate(appReadme, 1300),
         "",
         "Mompy app relevant file map:",
-        truncate(appTree, 1200),
+        truncate(appTree, 700),
         "",
         "Mompy website repository context:",
-        truncate(webReadme, 1000),
+        truncate(webReadme, 700),
       ].join("\n"),
-      5200
+      3600
     );
     repositoryContextTime = now;
     return repositoryContextCache;
   } catch {
-    return "Repository context unavailable. Mompy is a retro Python learning console with lessons, missions, local progress, validation feedback, docs, support, community, and a Vercel-hosted website.";
+    return MOMPY_STATIC_CONTEXT;
   }
 };
 
@@ -372,6 +383,7 @@ Behavior:
 - Try to solve or narrow the problem before routing. Give practical next steps the user can try now.
 - Do not expose secrets, tokens, webhook URLs, private config, or internal implementation details.
 - Do not say an issue was created unless the backend later adds the issue URL.
+- The backend may notify Discord internally for triage; do not mention that to the user unless a GitHub issue URL is actually returned.
 - Do not classify "sem bug", "no bug", "not a bug", "sem erro", or "no error" as a bug.
 - If the user says it is a suggestion, feedback, "não é bug", "não é um bug de verdade", or talks about improving lesson/error feedback, classify as "feature request", not "bug".
 - For lesson validation feedback complaints, explain that the useful details are: mission number, code typed, exact message Mompy showed, and what feedback they expected. Suggest better feedback ideas such as line location, expected output, and a small hint.
@@ -496,11 +508,16 @@ const callGemini = async ({ message, localResponse, page, context, history }) =>
   }
 
   const failures = [];
-  const repositoryContext = await getRepositoryContext();
+  let repositoryContext = MOMPY_STATIC_CONTEXT;
+  try {
+    repositoryContext = await getRepositoryContext();
+  } catch {
+    repositoryContext = MOMPY_STATIC_CONTEXT;
+  }
   const prompt = buildGeminiPrompt({ message, localResponse, page, context, repositoryContext, history });
 
-  try {
-    for (const model of GEMINI_FALLBACK_MODELS) {
+  for (const model of GEMINI_FALLBACK_MODELS) {
+    try {
       const geminiResponse = await fetchWithTimeout(
         `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(process.env.GEMINI_API_KEY)}`,
         {
@@ -516,7 +533,7 @@ const callGemini = async ({ message, localResponse, page, context, history }) =>
             },
           }),
         },
-        9500
+        8000
       );
 
       if (!geminiResponse.ok) {
@@ -534,18 +551,9 @@ const callGemini = async ({ message, localResponse, page, context, history }) =>
       }
 
       failures.push(`${model}:${parsed.reason}`);
+    } catch (error) {
+      failures.push(`${model}:${error?.name === "AbortError" ? "timeout" : "request_failed"}`);
     }
-  } catch (error) {
-    return {
-      response: null,
-      diagnostic: {
-        configured: true,
-        ok: false,
-        model: null,
-        reason: error?.name === "AbortError" ? "timeout" : "request_failed",
-        failures,
-      },
-    };
   }
 
   return {
@@ -685,7 +693,15 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: "Missing message" });
   }
 
-  const localResponse = classifyLocally(message);
+  let localResponse = classifyLocally(message);
+  if (isGreetingOnly(message) && history.length > 1) {
+    localResponse = {
+      ...localResponse,
+      reply: isPortugueseMessage(message)
+        ? "Estou aqui. Me diz em uma frase o que você quer fazer agora no Mompy, ou qual parte ficou confusa."
+        : "I'm here. Tell me in one sentence what you want to do next in Mompy, or which part felt confusing.",
+    };
+  }
   const escalationReady = wantsEscalation(message) || hasEnoughIssueContext(message, history);
   let response = localResponse;
   let source = "local";
