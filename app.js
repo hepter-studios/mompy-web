@@ -925,6 +925,7 @@ const supportRoutes = [
 ];
 
 let supportReportDraft = "";
+let supportConversationHistory = [];
 
 const portugueseSupportReplies = {
   bug: "Isso parece um bug ou travamento. Posso preparar um relatório limpo e te levar para a página certa do GitHub.",
@@ -1118,6 +1119,7 @@ const requestSupportAssistant = async (message) => {
         page: location.href,
         userAgent: navigator.userAgent,
         context: document.body.dataset.activeSection || "",
+        history: supportConversationHistory.slice(-8),
       }),
       signal: controller.signal,
     });
@@ -1194,6 +1196,8 @@ const respondToSupportMessage = async (message) => {
     appendSupportMessage("assistant", response.reply);
   }
 
+  supportConversationHistory.push({ role: "assistant", text: response.reply });
+  supportConversationHistory = supportConversationHistory.slice(-10);
   response.actions.forEach(addSupportAction);
   scrollSupportChatToLatest();
 };
@@ -1204,6 +1208,8 @@ supportForm?.addEventListener("submit", (event) => {
   if (!message) return;
 
   appendSupportMessage("user", message);
+  supportConversationHistory.push({ role: "user", text: message });
+  supportConversationHistory = supportConversationHistory.slice(-10);
   supportInput.value = "";
   window.setTimeout(() => respondToSupportMessage(message), 180);
 });

@@ -1,6 +1,11 @@
 const MOMPY_APP_REPO = "hepter-studios/mompy";
 const MOMPY_WEB_REPO = "hepter-studios/mompy-web";
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
+const GEMINI_FALLBACK_MODELS = [
+  GEMINI_MODEL,
+  "gemini-2.5-flash",
+  "gemini-1.5-flash",
+].filter((model, index, list) => model && list.indexOf(model) === index);
 
 const allowedLinks = {
   docs: "#docs",
@@ -34,6 +39,18 @@ const hasBugNegation = (text) =>
 const truncate = (text, max = 12000) => {
   const value = String(text || "");
   return value.length > max ? `${value.slice(0, max)}\n...[truncated]` : value;
+};
+
+const sanitizeHistory = (history) => {
+  if (!Array.isArray(history)) return [];
+
+  return history
+    .slice(-8)
+    .map((item) => ({
+      role: item?.role === "assistant" ? "assistant" : "user",
+      text: truncate(String(item?.text || "").trim(), 700),
+    }))
+    .filter((item) => item.text);
 };
 
 const safeJsonParse = (text) => {
@@ -289,33 +306,29 @@ const fetchRepoTreeSummary = async (repo) => {
 
 const getRepositoryContext = async () => {
   const now = Date.now();
-  if (repositoryContextCache && now - repositoryContextTime < 10 * 60 * 1000) {
+  if (repositoryContextCache && now - repositoryContextTime < 30 * 60 * 1000) {
     return repositoryContextCache;
   }
 
   try {
-    const [appReadme, appTree, webReadme, webTree] = await Promise.all([
+    const [appReadme, appTree, webReadme] = await Promise.all([
       fetchRepoReadme(MOMPY_APP_REPO),
       fetchRepoTreeSummary(MOMPY_APP_REPO),
       fetchRepoReadme(MOMPY_WEB_REPO),
-      fetchRepoTreeSummary(MOMPY_WEB_REPO),
     ]);
 
     repositoryContextCache = truncate(
       [
         "Mompy app repository context:",
-        truncate(appReadme, 5000),
+        truncate(appReadme, 2600),
         "",
         "Mompy app relevant file map:",
-        truncate(appTree, 2500),
+        truncate(appTree, 1200),
         "",
         "Mompy website repository context:",
-        truncate(webReadme, 3500),
-        "",
-        "Mompy website relevant file map:",
-        truncate(webTree, 2200),
+        truncate(webReadme, 1000),
       ].join("\n"),
-      12000
+      5200
     );
     repositoryContextTime = now;
     return repositoryContextCache;
@@ -324,43 +337,42 @@ const getRepositoryContext = async () => {
   }
 };
 
-const buildGeminiPrompt = ({ message, localResponse, page, context, repositoryContext }) => `
-You are Mompy Support, a concise and practical support assistant for Mompy.
+const buildGeminiPrompt = ({ message, localResponse, page, context, repositoryContext, history }) => `
+You are Mompy Support, the human-like support assistant for Mompy.
 
-Mompy is a retro Python learning console for beginners. It teaches Python through lessons, missions, a code editor, validation feedback, local progress, docs, and community support.
+Mission: talk naturally with the user, understand the problem, help solve it, and collect useful details for the Mompy team. Always answer in the user's language. If the user writes Portuguese, use Brazilian Portuguese. If the user switches language, follow them.
 
-Answer in the same language as the user when possible. If the user writes Portuguese, answer in natural Brazilian Portuguese. Be helpful, direct, and specific. Do not behave like a rigid form. If the user sends a short greeting or a vague message, greet them naturally and ask one useful follow-up question. Do not claim to have performed actions unless the backend metadata says an action happened. Do not expose secrets, tokens, webhook URLs, private config, or internal implementation details.
+Mompy: a retro Python learning console for beginners with lessons, missions, a code editor, validation feedback, local progress, docs, support, community, releases, and GitHub issues/discussions.
 
-Important classification rules:
-- Do not classify "sem bug", "no bug", "not a bug", "sem erro", or "no error" as a bug report.
-- Only request issue creation when the user describes a concrete error, crash, broken behavior, startup failure, or reproducible bug.
-- For a normal greeting, set category to "unclear", shouldCreateIssue false, and ask what happened.
+Behavior:
+- Be conversational, not a dead form.
+- For greetings or vague messages, ask one warm, specific follow-up question.
+- Help with installation, opening/running the app, lessons, missions, Python beginner concepts, bugs, ideas, docs, community, and downloads.
+- Do not expose secrets, tokens, webhook URLs, private config, or internal implementation details.
+- Do not say an issue was created unless the backend later adds the issue URL.
+- Do not classify "sem bug", "no bug", "not a bug", "sem erro", or "no error" as a bug.
+- Set shouldCreateIssue true only for concrete errors, crashes, broken behavior, startup failures, or reproducible bugs.
 
-Known routing:
-- Docs: ${allowedLinks.docs}
-- Learning path: ${allowedLinks.learningPath}
-- Python guide: ${allowedLinks.pythonGuide}
-- GitHub issues: ${allowedLinks.issues}
-- GitHub discussions: ${allowedLinks.discussions}
-- Discord: ${allowedLinks.discord}
-- Releases: ${allowedLinks.releases}
+Links:
+Docs ${allowedLinks.docs}
+Learn ${allowedLinks.learningPath}
+Python guide ${allowedLinks.pythonGuide}
+Issues ${allowedLinks.issues}
+Discussions ${allowedLinks.discussions}
+Discord ${allowedLinks.discord}
+Releases ${allowedLinks.releases}
 
-Repository context:
+Mompy knowledge:
 ${repositoryContext}
 
-Local classification:
-category=${localResponse.category}
-confidence=${localResponse.confidence}
-should_create_issue=${localResponse.createIssue}
+Conversation so far:
+${history.map((item) => `${item.role}: ${item.text}`).join("\n") || "none"}
 
-Page context:
-page=${page || "unknown"}
-active_section=${context || "unknown"}
+Local hint: category=${localResponse.category}, confidence=${localResponse.confidence}, createIssue=${localResponse.createIssue}
+Page: ${page || "unknown"} / section ${context || "unknown"}
+Latest user message: ${message}
 
-User message:
-${message}
-
-Return strict JSON only:
+Return strict JSON only, with no markdown:
 {
   "reply": "short support response",
   "category": "bug|startup|installation|lesson|mission|feature request|documentation|account/community|unclear",
@@ -396,75 +408,24 @@ const sanitizeActions = (actions, fallbackActions) => {
   return clean.length ? clean : fallbackActions;
 };
 
-const callGemini = async ({ message, localResponse, page, context }) => {
-  if (!process.env.GEMINI_API_KEY) {
-    return {
-      response: null,
-      diagnostic: { configured: false, ok: false, reason: "missing_env" },
-    };
-  }
-
-  let response;
-  try {
-    const repositoryContext = await getRepositoryContext();
-    const prompt = buildGeminiPrompt({ message, localResponse, page, context, repositoryContext });
-    response = await fetchWithTimeout(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(process.env.GEMINI_API_KEY)}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.25,
-            topP: 0.9,
-            maxOutputTokens: 900,
-            responseMimeType: "application/json",
-          },
-        }),
-      },
-      8500
-    );
-  } catch (error) {
-    return {
-      response: null,
-      diagnostic: {
-        configured: true,
-        ok: false,
-        reason: error?.name === "AbortError" ? "timeout" : "request_failed",
-      },
-    };
-  }
-
-  if (!response.ok) {
-    return {
-      response: null,
-      diagnostic: { configured: true, ok: false, reason: `http_${response.status}` },
-    };
-  }
-
+const parseGeminiResponse = async (response, localResponse) => {
   let data;
   try {
     data = await response.json();
   } catch {
-    return {
-      response: null,
-      diagnostic: { configured: true, ok: false, reason: "invalid_json" },
-    };
+    return { response: null, reason: "invalid_json" };
   }
 
   const text = data.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("\n") || "";
   const parsed = safeJsonParse(text);
   if (!parsed || typeof parsed.reply !== "string") {
-    return {
-      response: null,
-      diagnostic: { configured: true, ok: false, reason: "parse_failed" },
-    };
+    return { response: null, reason: "parse_failed" };
   }
 
   const reportDraft = parsed.issueBody || localResponse.reportDraft || "";
   const category = parsed.category || localResponse.category;
   const issueEligibleCategory = ["bug", "startup", "installation"].includes(normalizeText(category));
+
   return {
     response: {
       reply: parsed.reply.slice(0, 1200),
@@ -478,7 +439,80 @@ const callGemini = async ({ message, localResponse, page, context }) => {
         payload: action.type === "issue_draft" ? reportDraft : action.payload,
       })),
     },
-    diagnostic: { configured: true, ok: true, reason: "ok" },
+    reason: "ok",
+  };
+};
+
+const callGemini = async ({ message, localResponse, page, context, history }) => {
+  if (!process.env.GEMINI_API_KEY) {
+    return {
+      response: null,
+      diagnostic: { configured: false, ok: false, reason: "missing_env" },
+    };
+  }
+
+  const failures = [];
+  const repositoryContext = await getRepositoryContext();
+  const prompt = buildGeminiPrompt({ message, localResponse, page, context, repositoryContext, history });
+
+  try {
+    for (const model of GEMINI_FALLBACK_MODELS) {
+      const geminiResponse = await fetchWithTimeout(
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(process.env.GEMINI_API_KEY)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0.45,
+              topP: 0.9,
+              maxOutputTokens: 700,
+              responseMimeType: "application/json",
+            },
+          }),
+        },
+        9500
+      );
+
+      if (!geminiResponse.ok) {
+        failures.push(`${model}:http_${geminiResponse.status}`);
+        if ([429, 500, 502, 503, 504].includes(geminiResponse.status)) continue;
+        break;
+      }
+
+      const parsed = await parseGeminiResponse(geminiResponse, localResponse);
+      if (parsed.response) {
+        return {
+          response: parsed.response,
+          diagnostic: { configured: true, ok: true, reason: "ok", model, failures },
+        };
+      }
+
+      failures.push(`${model}:${parsed.reason}`);
+    }
+  } catch (error) {
+    return {
+      response: null,
+      diagnostic: {
+        configured: true,
+        ok: false,
+        model: null,
+        reason: error?.name === "AbortError" ? "timeout" : "request_failed",
+        failures,
+      },
+    };
+  }
+
+  return {
+    response: null,
+    diagnostic: {
+      configured: true,
+      ok: false,
+      model: null,
+      reason: failures.at(-1)?.split(":").slice(1).join(":") || "no_model_response",
+      failures,
+    },
   };
 };
 
@@ -601,6 +635,7 @@ module.exports = async function handler(req, res) {
   const page = String(body.page || "").slice(0, 500);
   const userAgent = String(body.userAgent || "").slice(0, 300);
   const context = String(body.context || "").slice(0, 100);
+  const history = sanitizeHistory(body.history);
 
   if (!message) {
     return res.status(400).json({ error: "Missing message" });
@@ -616,7 +651,7 @@ module.exports = async function handler(req, res) {
   let discordDiagnostic = { configured: Boolean(process.env.DISCORD_WEBHOOK_URL), ok: false, reason: "not_called" };
 
   try {
-    const geminiResult = await callGemini({ message, localResponse, page, context });
+    const geminiResult = await callGemini({ message, localResponse, page, context, history });
     geminiDiagnostic = geminiResult?.diagnostic || geminiDiagnostic;
     if (geminiResult?.response) {
       response = geminiResult.response;
