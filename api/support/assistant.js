@@ -25,7 +25,7 @@ const normalizeText = (text) =>
     .replace(/[\u0300-\u036f]/g, "");
 
 const isPortugueseMessage = (text) =>
-  /\b(oi|olá|ola|olhe|bom dia|boa tarde|boa noite|você|voce|não|nao|sem|só|so|estou|testando|teste|conversa|normal|erro|ajuda|instalar|abrir|missão|missao|lição|licao|problema)\b/i.test(
+  /\b(oi|olá|ola|olhe|bom dia|boa tarde|boa noite|você|voce|tu|não|nao|sem|só|so|estou|testando|teste|conversa|normal|erro|ajuda|instalar|abrir|missão|missao|lição|licao|problema|sugestao|sugestão|pug|coisa|entendi|disse)\b/i.test(
     normalizeText(text)
   );
 
@@ -34,6 +34,24 @@ const isGreetingOnly = (text) =>
 
 const hasBugNegation = (text) =>
   /\b(sem|no|not|não|nao)\s+(bug|erro|crash|problema|problem|issue)\b/i.test(normalizeText(text));
+
+const looksLikeFeedbackSuggestion = (text) =>
+  /\b(sugestao|sugestão|melhoria|melhor|dica|explicar|explica|linha|motivo|esperava|deveria|feedback|não é bug|nao e bug|nao eh bug)\b/i.test(
+    normalizeText(text)
+  );
+
+const wantsEscalation = (text) =>
+  /\b(reportar|reporta|manda|mande|enviar|envia|encaminhar|encaminha|github|issue|bug report|open issue|create issue|falar com a equipe|hepter)\b/i.test(
+    normalizeText(text)
+  );
+
+const hasEnoughIssueContext = (text, history = []) => {
+  const combined = normalizeText([...history.map((item) => item.text), text].join("\n"));
+  const hasProblem = /\b(erro|error|crash|trava|travou|bug|bugou|nao funciona|não funciona|falha|quebra|quebrado|fecha|tela preta)\b/.test(combined);
+  const hasPlace = /\b(missao|missão|lesson|licao|lição|aula|install|instalacao|instalação|abrir|start|run|editor|codigo|código|download)\b/.test(combined);
+  const hasDetail = combined.length > 180 || /\b(linha|mensagem|output|saida|saída|mostra|aparece|esperava|deveria|quando|porque|por que)\b/.test(combined);
+  return hasProblem && hasPlace && hasDetail;
+};
 
 const truncate = (text, max = 12000) => {
   const value = String(text || "");
@@ -104,9 +122,9 @@ const routes = [
     category: "startup",
     confidence: 0.84,
     keywords: ["open", "start", "run", "launch", "startup", "abrir", "abre", "nao abre", "mompy nao abre", "iniciar", "rodar", "executar"],
-    reply: "This looks like a startup issue. I prepared a report and sent it to the project triage path.",
+    reply: "This sounds like a startup issue. Tell me what happens when you open Mompy: blank screen, crash, error text, or nothing at all?",
     report: true,
-    createIssue: true,
+    createIssue: false,
     actions: [
       { label: "Read Docs", type: "scroll", target: allowedLinks.docs },
       { label: "Download Latest Version", type: "external", target: allowedLinks.releases },
@@ -118,9 +136,9 @@ const routes = [
     category: "bug",
     confidence: 0.9,
     keywords: ["bug", "error", "crash", "broken", "fail", "not working", "erro", "travou", "quebrado", "falha", "bugou", "nao funciona", "não funciona"],
-    reply: "This looks like a bug or crash. I prepared a clean report and sent it to the project triage path.",
+    reply: "That may be a bug, but I need a little more detail before we report it. What screen or mission were you on, and what did Mompy show?",
     report: true,
-    createIssue: true,
+    createIssue: false,
     actions: [
       { label: "Generate Report", type: "issue_draft" },
       { label: "Copy Report", type: "copy" },
@@ -187,11 +205,11 @@ const routes = [
 
 const portugueseRouteReplies = {
   installation: "Isso parece problema de instalação. Comece pela documentação, confirme que está usando a versão mais recente e abra uma discussão se ainda falhar.",
-  startup: "Isso parece problema para abrir ou iniciar o Mompy. Vou preparar um relatório limpo e te direcionar para o caminho certo do projeto.",
-  bug: "Isso parece um bug ou travamento. Vou preparar um relatório limpo e te direcionar para o caminho certo do projeto.",
+  startup: "Isso parece problema para abrir o Mompy. Me diga o que acontece quando você tenta iniciar: tela preta, fecha sozinho, aparece algum texto de erro ou nada acontece?",
+  bug: "Pode ser um bug, mas preciso entender melhor antes de reportar. Em qual tela ou missão isso aconteceu, e que mensagem o Mompy mostrou?",
   mission: "Isso parece uma dúvida de missão. Abra a trilha de aprendizado e, se perguntar na comunidade, mande também o número da missão.",
   lesson: "Isso parece uma dúvida de aula. Abra a trilha de aprendizado primeiro; se ainda travar, use a documentação ou a comunidade.",
-  "feature request": "Boa ideia para melhoria. O melhor caminho é organizar a sugestão nas Discussions antes de virar uma issue.",
+  "feature request": "Entendi como sugestão. Me conte como você gostaria que o Mompy explicasse melhor o erro da lição: mostrar a linha, o motivo, um exemplo correto ou uma dica passo a passo?",
   documentation: "Isso parece relacionado à documentação. Comece pela seção de docs ou pelo guia de Python.",
   "account/community": "Para conversa rápida, use o Discord. Para perguntas que precisam ficar registradas, use o GitHub Discussions.",
 };
@@ -217,13 +235,15 @@ const classifyLocally = (message) => {
   }
 
   const bugNegated = hasBugNegation(message);
+  const feedbackSuggestion = looksLikeFeedbackSuggestion(message);
   const route = routes
     .map((item) => ({
       ...item,
       score:
         bugNegated && ["bug", "startup"].includes(item.category)
           ? 0
-          : item.keywords.filter((keyword) => normalized.includes(normalizeText(keyword))).length,
+          : item.keywords.filter((keyword) => normalized.includes(normalizeText(keyword))).length +
+            (feedbackSuggestion && item.category === "feature request" ? 2 : 0),
     }))
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score || b.confidence - a.confidence)[0];
@@ -345,12 +365,18 @@ Mompy: a retro Python learning console for beginners with lessons, missions, a c
 
 Behavior:
 - Be conversational, not a dead form.
+- Do not start every answer with "Olá", "Oi", or "Hi". Greet only when the user's latest message is only a greeting.
+- If the user is confused, acknowledge it, correct yourself, and explain in simple words.
 - For greetings or vague messages, ask one warm, specific follow-up question.
 - Help with installation, opening/running the app, lessons, missions, Python beginner concepts, bugs, ideas, docs, community, and downloads.
+- Try to solve or narrow the problem before routing. Give practical next steps the user can try now.
 - Do not expose secrets, tokens, webhook URLs, private config, or internal implementation details.
 - Do not say an issue was created unless the backend later adds the issue URL.
 - Do not classify "sem bug", "no bug", "not a bug", "sem erro", or "no error" as a bug.
-- Set shouldCreateIssue true only for concrete errors, crashes, broken behavior, startup failures, or reproducible bugs.
+- If the user says it is a suggestion, feedback, "não é bug", "não é um bug de verdade", or talks about improving lesson/error feedback, classify as "feature request", not "bug".
+- For lesson validation feedback complaints, explain that the useful details are: mission number, code typed, exact message Mompy showed, and what feedback they expected. Suggest better feedback ideas such as line location, expected output, and a small hint.
+- Set shouldCreateIssue true only after enough concrete details exist: what screen/mission, what happened, what should have happened, and how to reproduce it. Otherwise ask for details.
+- If you will suggest reporting, say it clearly as optional: "Posso encaminhar isso para a equipe da Hepter Studios quando você me der esses detalhes." Never imply that reporting alone solves the user's immediate problem.
 
 Links:
 Docs ${allowedLinks.docs}
@@ -373,7 +399,7 @@ Latest user message: ${message}
 
 Return strict JSON only, with no markdown:
 {
-  "reply": "short support response",
+  "reply": "clear conversational support response, 1-3 short paragraphs max",
   "category": "bug|startup|installation|lesson|mission|feature request|documentation|account/community|unclear",
   "confidence": 0.0,
   "shouldCreateIssue": false,
@@ -407,7 +433,7 @@ const sanitizeActions = (actions, fallbackActions) => {
   return clean.length ? clean : fallbackActions;
 };
 
-const parseGeminiResponse = async (response, localResponse) => {
+const parseGeminiResponse = async (response, localResponse, message, history) => {
   let data;
   try {
     data = await response.json();
@@ -442,13 +468,14 @@ const parseGeminiResponse = async (response, localResponse) => {
   const reportDraft = parsed.issueBody || localResponse.reportDraft || "";
   const category = parsed.category || localResponse.category;
   const issueEligibleCategory = ["bug", "startup", "installation"].includes(normalizeText(category));
+  const escalationReady = wantsEscalation(message) || hasEnoughIssueContext(message, history);
 
   return {
     response: {
       reply: parsed.reply.slice(0, 1200),
       category,
       confidence: Number.isFinite(parsed.confidence) ? Math.max(0, Math.min(1, parsed.confidence)) : localResponse.confidence,
-      createIssue: Boolean(parsed.shouldCreateIssue) && issueEligibleCategory,
+      createIssue: Boolean(parsed.shouldCreateIssue) && issueEligibleCategory && escalationReady,
       issueTitle: parsed.issueTitle,
       reportDraft,
       actions: sanitizeActions(parsed.actions, localResponse.actions).map((action) => ({
@@ -498,7 +525,7 @@ const callGemini = async ({ message, localResponse, page, context, history }) =>
         break;
       }
 
-      const parsed = await parseGeminiResponse(geminiResponse, localResponse);
+      const parsed = await parseGeminiResponse(geminiResponse, localResponse, message, history);
       if (parsed.response) {
         return {
           response: parsed.response,
@@ -659,6 +686,7 @@ module.exports = async function handler(req, res) {
   }
 
   const localResponse = classifyLocally(message);
+  const escalationReady = wantsEscalation(message) || hasEnoughIssueContext(message, history);
   let response = localResponse;
   let source = "local";
   let issue = null;
@@ -684,12 +712,18 @@ module.exports = async function handler(req, res) {
     source = "local";
   }
 
+  if (!escalationReady && ["bug", "startup", "installation"].includes(normalizeText(response.category))) {
+    response.createIssue = false;
+  }
+
   try {
     const githubResult = await createGitHubIssue({ message, response, page, userAgent });
     issue = githubResult?.issue || null;
     githubDiagnostic = githubResult?.diagnostic || githubDiagnostic;
     if (issue?.url) {
-      response.reply = `${response.reply}\n\nGitHub issue created: ${issue.url}`;
+      response.reply = isPortugueseMessage(message)
+        ? `${response.reply}\n\nEncaminhei isso para a equipe da Hepter Studios com os detalhes da conversa: ${issue.url}`
+        : `${response.reply}\n\nI sent this to the Hepter Studios team with the conversation details: ${issue.url}`;
       response.actions = [
         { label: "View GitHub Issues", type: "external", target: allowedLinks.issues },
         ...response.actions.filter((action) => action.label !== "Open GitHub Issue"),
