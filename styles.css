@@ -1470,6 +1470,25 @@ html.translated-rtl .home-copy p:not(.section-tag):not(.status-line) {
   line-height: 1.45;
 }
 
+.support-message.is-thinking p::after {
+  content: "...";
+  display: inline-block;
+  width: 1.4em;
+  overflow: hidden;
+  vertical-align: bottom;
+  animation: support-thinking 1.05s steps(4, end) infinite;
+}
+
+@keyframes support-thinking {
+  0% {
+    width: 0;
+  }
+
+  100% {
+    width: 1.4em;
+  }
+}
+
 .support-action-bar {
   display: flex;
   flex-wrap: wrap;

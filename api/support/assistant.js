@@ -20,6 +20,17 @@ const normalizeText = (text) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
+const isPortugueseMessage = (text) =>
+  /\b(oi|olá|ola|olhe|bom dia|boa tarde|boa noite|você|voce|não|nao|sem|só|so|estou|testando|teste|conversa|normal|erro|ajuda|instalar|abrir|missão|missao|lição|licao|problema)\b/i.test(
+    normalizeText(text)
+  );
+
+const isGreetingOnly = (text) =>
+  /^(oi|ola|olá|hi|hello|hey|olhe|look|bom dia|boa tarde|boa noite|e ai|e aí)[\s!.?]*$/i.test(normalizeText(text));
+
+const hasBugNegation = (text) =>
+  /\b(sem|no|not|não|nao)\s+(bug|erro|crash|problema|problem|issue)\b/i.test(normalizeText(text));
+
 const truncate = (text, max = 12000) => {
   const value = String(text || "");
   return value.length > max ? `${value.slice(0, max)}\n...[truncated]` : value;
@@ -158,19 +169,54 @@ const routes = [
   },
 ];
 
+const portugueseRouteReplies = {
+  installation: "Isso parece problema de instalação. Comece pela documentação, confirme que está usando a versão mais recente e abra uma discussão se ainda falhar.",
+  startup: "Isso parece problema para abrir ou iniciar o Mompy. Vou preparar um relatório limpo e te direcionar para o caminho certo do projeto.",
+  bug: "Isso parece um bug ou travamento. Vou preparar um relatório limpo e te direcionar para o caminho certo do projeto.",
+  mission: "Isso parece uma dúvida de missão. Abra a trilha de aprendizado e, se perguntar na comunidade, mande também o número da missão.",
+  lesson: "Isso parece uma dúvida de aula. Abra a trilha de aprendizado primeiro; se ainda travar, use a documentação ou a comunidade.",
+  "feature request": "Boa ideia para melhoria. O melhor caminho é organizar a sugestão nas Discussions antes de virar uma issue.",
+  documentation: "Isso parece relacionado à documentação. Comece pela seção de docs ou pelo guia de Python.",
+  "account/community": "Para conversa rápida, use o Discord. Para perguntas que precisam ficar registradas, use o GitHub Discussions.",
+};
+
 const classifyLocally = (message) => {
   const normalized = normalizeText(message);
+  const portuguese = isPortugueseMessage(message);
+
+  if (isGreetingOnly(message)) {
+    return {
+      reply: portuguese
+        ? "Oi. Me conta o que aconteceu no Mompy: instalação, erro, missão, aula ou uma ideia? Se puder, diga também em qual tela isso aparece."
+        : "Hi. Tell me what happened in Mompy: installation, an error, a mission, a lesson, or an idea? If you can, mention which screen shows it.",
+      category: "conversation",
+      confidence: 0.45,
+      createIssue: false,
+      actions: [
+        { label: "Read Docs", type: "scroll", target: allowedLinks.docs },
+        { label: "Ask Community", type: "external", target: allowedLinks.discord },
+      ],
+      reportDraft: "",
+    };
+  }
+
+  const bugNegated = hasBugNegation(message);
   const route = routes
     .map((item) => ({
       ...item,
-      score: item.keywords.filter((keyword) => normalized.includes(normalizeText(keyword))).length,
+      score:
+        bugNegated && ["bug", "startup"].includes(item.category)
+          ? 0
+          : item.keywords.filter((keyword) => normalized.includes(normalizeText(keyword))).length,
     }))
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score || b.confidence - a.confidence)[0];
 
   if (!route) {
     return {
-      reply: "What is blocking you: installation, an error, a lesson, a mission, or an idea?",
+      reply: portuguese
+        ? "Entendi. Me dá só mais um detalhe: isso é sobre instalar/abrir o Mompy, algum erro, uma aula, uma missão ou uma sugestão?"
+        : "I understand. Give me one more detail: is this about installing/opening Mompy, an error, a lesson, a mission, or a suggestion?",
       category: "unclear",
       confidence: 0.35,
       createIssue: false,
@@ -184,7 +230,7 @@ const classifyLocally = (message) => {
 
   const reportDraft = route.report ? buildIssueDraft(message, route.category) : "";
   return {
-    reply: route.reply,
+    reply: portuguese ? portugueseRouteReplies[route.category] || route.reply : route.reply,
     category: route.category,
     confidence: route.confidence,
     createIssue: Boolean(route.createIssue),
@@ -283,7 +329,12 @@ You are Mompy Support, a concise and practical support assistant for Mompy.
 
 Mompy is a retro Python learning console for beginners. It teaches Python through lessons, missions, a code editor, validation feedback, local progress, docs, and community support.
 
-Answer in the same language as the user when possible. Be helpful, direct, and specific. Do not claim to have performed actions unless the backend metadata says an action happened. Do not expose secrets, tokens, webhook URLs, private config, or internal implementation details.
+Answer in the same language as the user when possible. If the user writes Portuguese, answer in natural Brazilian Portuguese. Be helpful, direct, and specific. Do not behave like a rigid form. If the user sends a short greeting or a vague message, greet them naturally and ask one useful follow-up question. Do not claim to have performed actions unless the backend metadata says an action happened. Do not expose secrets, tokens, webhook URLs, private config, or internal implementation details.
+
+Important classification rules:
+- Do not classify "sem bug", "no bug", "not a bug", "sem erro", or "no error" as a bug report.
+- Only request issue creation when the user describes a concrete error, crash, broken behavior, startup failure, or reproducible bug.
+- For a normal greeting, set category to "unclear", shouldCreateIssue false, and ask what happened.
 
 Known routing:
 - Docs: ${allowedLinks.docs}
@@ -346,51 +397,99 @@ const sanitizeActions = (actions, fallbackActions) => {
 };
 
 const callGemini = async ({ message, localResponse, page, context }) => {
-  if (!process.env.GEMINI_API_KEY) return null;
+  if (!process.env.GEMINI_API_KEY) {
+    return {
+      response: null,
+      diagnostic: { configured: false, ok: false, reason: "missing_env" },
+    };
+  }
 
-  const repositoryContext = await getRepositoryContext();
-  const prompt = buildGeminiPrompt({ message, localResponse, page, context, repositoryContext });
-  const response = await fetchWithTimeout(
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(process.env.GEMINI_API_KEY)}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.25,
-          topP: 0.9,
-          maxOutputTokens: 900,
-          responseMimeType: "application/json",
-        },
-      }),
-    },
-    8500
-  );
+  let response;
+  try {
+    const repositoryContext = await getRepositoryContext();
+    const prompt = buildGeminiPrompt({ message, localResponse, page, context, repositoryContext });
+    response = await fetchWithTimeout(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(process.env.GEMINI_API_KEY)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.25,
+            topP: 0.9,
+            maxOutputTokens: 900,
+            responseMimeType: "application/json",
+          },
+        }),
+      },
+      8500
+    );
+  } catch (error) {
+    return {
+      response: null,
+      diagnostic: {
+        configured: true,
+        ok: false,
+        reason: error?.name === "AbortError" ? "timeout" : "request_failed",
+      },
+    };
+  }
 
-  if (!response.ok) return null;
-  const data = await response.json();
+  if (!response.ok) {
+    return {
+      response: null,
+      diagnostic: { configured: true, ok: false, reason: `http_${response.status}` },
+    };
+  }
+
+  let data;
+  try {
+    data = await response.json();
+  } catch {
+    return {
+      response: null,
+      diagnostic: { configured: true, ok: false, reason: "invalid_json" },
+    };
+  }
+
   const text = data.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("\n") || "";
   const parsed = safeJsonParse(text);
-  if (!parsed || typeof parsed.reply !== "string") return null;
+  if (!parsed || typeof parsed.reply !== "string") {
+    return {
+      response: null,
+      diagnostic: { configured: true, ok: false, reason: "parse_failed" },
+    };
+  }
 
   const reportDraft = parsed.issueBody || localResponse.reportDraft || "";
+  const category = parsed.category || localResponse.category;
+  const issueEligibleCategory = ["bug", "startup", "installation"].includes(normalizeText(category));
   return {
-    reply: parsed.reply.slice(0, 1200),
-    category: parsed.category || localResponse.category,
-    confidence: Number.isFinite(parsed.confidence) ? Math.max(0, Math.min(1, parsed.confidence)) : localResponse.confidence,
-    createIssue: Boolean(parsed.shouldCreateIssue) && localResponse.createIssue,
-    issueTitle: parsed.issueTitle,
-    reportDraft,
-    actions: sanitizeActions(parsed.actions, localResponse.actions).map((action) => ({
-      ...action,
-      payload: action.type === "issue_draft" ? reportDraft : action.payload,
-    })),
+    response: {
+      reply: parsed.reply.slice(0, 1200),
+      category,
+      confidence: Number.isFinite(parsed.confidence) ? Math.max(0, Math.min(1, parsed.confidence)) : localResponse.confidence,
+      createIssue: Boolean(parsed.shouldCreateIssue) && issueEligibleCategory,
+      issueTitle: parsed.issueTitle,
+      reportDraft,
+      actions: sanitizeActions(parsed.actions, localResponse.actions).map((action) => ({
+        ...action,
+        payload: action.type === "issue_draft" ? reportDraft : action.payload,
+      })),
+    },
+    diagnostic: { configured: true, ok: true, reason: "ok" },
   };
 };
 
 const createGitHubIssue = async ({ message, response, page, userAgent }) => {
-  if (!process.env.GITHUB_TOKEN || !response.createIssue) return null;
+  if (!process.env.GITHUB_TOKEN) {
+    return { issue: null, diagnostic: { configured: false, ok: false, reason: "missing_env" } };
+  }
+
+  if (!response.createIssue) {
+    return { issue: null, diagnostic: { configured: true, ok: false, reason: "not_needed" } };
+  }
 
   const titleBase = response.issueTitle || `[Support] ${response.category}: ${message.slice(0, 70)}`;
   const body = [
@@ -420,13 +519,21 @@ const createGitHubIssue = async ({ message, response, page, userAgent }) => {
     7000
   );
 
-  if (!issueResponse.ok) return null;
+  if (!issueResponse.ok) {
+    return { issue: null, diagnostic: { configured: true, ok: false, reason: `http_${issueResponse.status}` } };
+  }
+
   const issue = await issueResponse.json();
-  return { number: issue.number, url: issue.html_url };
+  return {
+    issue: { number: issue.number, url: issue.html_url },
+    diagnostic: { configured: true, ok: true, reason: "created" },
+  };
 };
 
 const notifyDiscord = async ({ message, response, issue, page }) => {
-  if (!process.env.DISCORD_WEBHOOK_URL) return false;
+  if (!process.env.DISCORD_WEBHOOK_URL) {
+    return { notified: false, diagnostic: { configured: false, ok: false, reason: "missing_env" } };
+  }
 
   const fields = [
     { name: "Category", value: response.category || "unclear", inline: true },
@@ -467,7 +574,14 @@ const notifyDiscord = async ({ message, response, issue, page }) => {
     5000
   );
 
-  return discordResponse.ok;
+  return {
+    notified: discordResponse.ok,
+    diagnostic: {
+      configured: true,
+      ok: discordResponse.ok,
+      reason: discordResponse.ok ? "sent" : `http_${discordResponse.status}`,
+    },
+  };
 };
 
 module.exports = async function handler(req, res) {
@@ -497,20 +611,31 @@ module.exports = async function handler(req, res) {
   let source = "local";
   let issue = null;
   let discordNotified = false;
+  let geminiDiagnostic = { configured: Boolean(process.env.GEMINI_API_KEY), ok: false, reason: "not_called" };
+  let githubDiagnostic = { configured: Boolean(process.env.GITHUB_TOKEN), ok: false, reason: "not_needed" };
+  let discordDiagnostic = { configured: Boolean(process.env.DISCORD_WEBHOOK_URL), ok: false, reason: "not_called" };
 
   try {
-    const geminiResponse = await callGemini({ message, localResponse, page, context });
-    if (geminiResponse) {
-      response = geminiResponse;
+    const geminiResult = await callGemini({ message, localResponse, page, context });
+    geminiDiagnostic = geminiResult?.diagnostic || geminiDiagnostic;
+    if (geminiResult?.response) {
+      response = geminiResult.response;
       source = "gemini";
     }
-  } catch {
+  } catch (error) {
+    geminiDiagnostic = {
+      configured: Boolean(process.env.GEMINI_API_KEY),
+      ok: false,
+      reason: error?.name === "AbortError" ? "timeout" : "exception",
+    };
     response = localResponse;
     source = "local";
   }
 
   try {
-    issue = await createGitHubIssue({ message, response, page, userAgent });
+    const githubResult = await createGitHubIssue({ message, response, page, userAgent });
+    issue = githubResult?.issue || null;
+    githubDiagnostic = githubResult?.diagnostic || githubDiagnostic;
     if (issue?.url) {
       response.reply = `${response.reply}\n\nGitHub issue created: ${issue.url}`;
       response.actions = [
@@ -518,13 +643,25 @@ module.exports = async function handler(req, res) {
         ...response.actions.filter((action) => action.label !== "Open GitHub Issue"),
       ].slice(0, 4);
     }
-  } catch {
+  } catch (error) {
+    githubDiagnostic = {
+      configured: Boolean(process.env.GITHUB_TOKEN),
+      ok: false,
+      reason: error?.name === "AbortError" ? "timeout" : "exception",
+    };
     issue = null;
   }
 
   try {
-    discordNotified = await notifyDiscord({ message, response, issue, page });
-  } catch {
+    const discordResult = await notifyDiscord({ message, response, issue, page });
+    discordNotified = Boolean(discordResult?.notified);
+    discordDiagnostic = discordResult?.diagnostic || discordDiagnostic;
+  } catch (error) {
+    discordDiagnostic = {
+      configured: Boolean(process.env.DISCORD_WEBHOOK_URL),
+      ok: false,
+      reason: error?.name === "AbortError" ? "timeout" : "exception",
+    };
     discordNotified = false;
   }
 
@@ -538,6 +675,16 @@ module.exports = async function handler(req, res) {
       source,
       issueUrl: issue?.url || null,
       discordNotified,
+      env: {
+        gemini: Boolean(process.env.GEMINI_API_KEY),
+        github: Boolean(process.env.GITHUB_TOKEN),
+        discord: Boolean(process.env.DISCORD_WEBHOOK_URL),
+      },
+      diagnostics: {
+        gemini: geminiDiagnostic,
+        github: githubDiagnostic,
+        discord: discordDiagnostic,
+      },
     },
   });
 };

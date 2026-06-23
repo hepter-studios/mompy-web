@@ -926,6 +926,28 @@ const supportRoutes = [
 
 let supportReportDraft = "";
 
+const portugueseSupportReplies = {
+  bug: "Isso parece um bug ou travamento. Posso preparar um relatório limpo e te levar para a página certa do GitHub.",
+  installation: "Isso parece problema de instalação. Comece pela documentação e confirme se está usando a versão mais recente.",
+  startup: "Isso parece problema para abrir ou iniciar o Mompy. Veja a documentação e a versão mais recente; se continuar, abra um relatório.",
+  lesson: "Isso parece uma dúvida de aula. Abra a trilha de aprendizado primeiro; se ainda travar, use a documentação ou a comunidade.",
+  mission: "Isso parece uma dúvida de missão. Use a trilha de aprendizado e a documentação; se perguntar na comunidade, mande o número da missão.",
+  "feature request": "Boa ideia para melhoria. O melhor caminho é organizar a sugestão nas Discussions antes de virar uma issue.",
+  documentation: "Isso parece relacionado à documentação. Comece pela seção de docs ou pelo guia de Python.",
+  "account/community": "Para conversa rápida, use o Discord. Para perguntas que precisam ficar registradas, use o GitHub Discussions.",
+};
+
+const isPortugueseSupportMessage = (text) =>
+  /\b(oi|ola|olhe|bom dia|boa tarde|boa noite|voce|nao|sem|so|estou|testando|teste|conversa|normal|erro|ajuda|instalar|abrir|missao|licao|problema)\b/i.test(
+    normalizeSearchText(text)
+  );
+
+const isSupportGreetingOnly = (text) =>
+  /^(oi|ola|hi|hello|hey|olhe|look|bom dia|boa tarde|boa noite|e ai)[\s!.?]*$/i.test(normalizeSearchText(text));
+
+const hasSupportBugNegation = (text) =>
+  /\b(sem|no|not|nao)\s+(bug|erro|crash|problema|problem|issue)\b/i.test(normalizeSearchText(text));
+
 const scrollSupportChatToLatest = () => {
   if (!supportChat) return;
 
@@ -953,6 +975,7 @@ const appendSupportMessage = (kind, text, author = kind === "user" ? "You" : "Mo
   message.append(label, body);
   supportChat.append(message);
   scrollSupportChatToLatest();
+  return message;
 };
 
 const buildSupportReport = (message) => [
@@ -1024,17 +1047,40 @@ const normalizeSupportResponse = (response, originalMessage) => {
 
 const getLocalSupportResponse = (message) => {
   const normalized = normalizeSearchText(message);
+  const portuguese = isPortugueseSupportMessage(message);
+
+  if (isSupportGreetingOnly(message)) {
+    return {
+      reply: portuguese
+        ? "Oi. Me conta o que aconteceu no Mompy: instalacao, erro, missao, aula ou uma ideia? Se puder, diga tambem em qual tela isso aparece."
+        : "Hi. Tell me what happened in Mompy: installation, an error, a mission, a lesson, or an idea? If you can, mention which screen shows it.",
+      category: "unclear",
+      confidence: 0.35,
+      actions: [
+        { label: "Read Docs", type: "scroll", target: supportAllowedLinks.docs },
+        { label: "Ask Community", type: "external", target: supportAllowedLinks.discord },
+      ],
+      reportDraft: "",
+    };
+  }
+
+  const bugNegated = hasSupportBugNegation(message);
   const route = supportRoutes
     .map((item) => ({
       ...item,
-      score: item.keywords.filter((keyword) => normalized.includes(normalizeSearchText(keyword))).length,
+      score:
+        bugNegated && ["bug", "startup"].includes(item.category)
+          ? 0
+          : item.keywords.filter((keyword) => normalized.includes(normalizeSearchText(keyword))).length,
     }))
     .filter((item) => item.score > 0)
-    .sort((a, b) => b.score - a.score)[0];
+    .sort((a, b) => b.score - a.score || b.confidence - a.confidence)[0];
 
   if (!route) {
     return {
-      reply: "What is blocking you: installation, an error, a lesson, a mission, or an idea?",
+      reply: portuguese
+        ? "Entendi. Me da so mais um detalhe: isso e sobre instalar ou abrir o Mompy, algum erro, uma aula, uma missao ou uma sugestao?"
+        : "I understand. Give me one more detail: is this about installing or opening Mompy, an error, a lesson, a mission, or a suggestion?",
       category: "unclear",
       confidence: 0.35,
       actions: [
@@ -1048,7 +1094,7 @@ const getLocalSupportResponse = (message) => {
   const reportDraft = route.reportKind === "feature" ? buildFeatureDraft(message) : route.reportKind ? buildSupportReport(message) : "";
 
   return {
-    reply: route.reply,
+    reply: portuguese ? portugueseSupportReplies[route.category] || route.reply : route.reply,
     category: route.category,
     confidence: route.confidence,
     actions: route.actions.map((action) => ({
@@ -1134,10 +1180,20 @@ const addSupportAction = (action) => {
 
 const respondToSupportMessage = async (message) => {
   clearSupportActions();
+  const pendingMessage = appendSupportMessage("assistant", "Thinking");
+  pendingMessage?.classList.add("is-thinking");
+
   const response = await requestSupportAssistant(message);
   supportReportDraft = response.reportDraft || "";
 
-  appendSupportMessage("assistant", response.reply);
+  if (pendingMessage) {
+    pendingMessage.classList.remove("is-thinking");
+    pendingMessage.querySelector("p").textContent = response.reply;
+    scrollSupportChatToLatest();
+  } else {
+    appendSupportMessage("assistant", response.reply);
+  }
+
   response.actions.forEach(addSupportAction);
   scrollSupportChatToLatest();
 };
