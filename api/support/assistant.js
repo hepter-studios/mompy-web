@@ -1,9 +1,12 @@
 const MOMPY_APP_REPO = "hepter-studios/mompy";
 const MOMPY_WEB_REPO = "hepter-studios/mompy-web";
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash";
 const GEMINI_FALLBACK_MODELS = [
   GEMINI_MODEL,
   "gemini-2.5-flash-lite",
+  "gemini-2.5-flash",
+  "gemini-2.0-flash-lite",
+  "gemini-2.0-flash",
 ].filter((model, index, list) => model && list.indexOf(model) === index);
 
 const MOMPY_STATIC_CONTEXT = `
@@ -538,7 +541,7 @@ const callGemini = async ({ message, localResponse, page, context, history }) =>
 
       if (!geminiResponse.ok) {
         failures.push(`${model}:http_${geminiResponse.status}`);
-        if ([429, 500, 502, 503, 504].includes(geminiResponse.status)) continue;
+        if (![401, 403].includes(geminiResponse.status)) continue;
         break;
       }
 
