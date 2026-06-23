@@ -1,10 +1,9 @@
 const MOMPY_APP_REPO = "hepter-studios/mompy";
 const MOMPY_WEB_REPO = "hepter-studios/mompy-web";
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 const GEMINI_FALLBACK_MODELS = [
   GEMINI_MODEL,
-  "gemini-2.5-flash",
-  "gemini-1.5-flash",
+  "gemini-2.5-flash-lite",
 ].filter((model, index, list) => model && list.indexOf(model) === index);
 
 const allowedLinks = {
@@ -419,7 +418,25 @@ const parseGeminiResponse = async (response, localResponse) => {
   const text = data.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("\n") || "";
   const parsed = safeJsonParse(text);
   if (!parsed || typeof parsed.reply !== "string") {
-    return { response: null, reason: "parse_failed" };
+    const plainReply = text
+      .replace(/^```(?:json)?/i, "")
+      .replace(/```$/i, "")
+      .trim();
+
+    if (!plainReply) return { response: null, reason: "parse_failed" };
+
+    return {
+      response: {
+        reply: plainReply.slice(0, 1200),
+        category: localResponse.category,
+        confidence: Math.max(localResponse.confidence || 0.5, 0.55),
+        createIssue: false,
+        issueTitle: "",
+        reportDraft: localResponse.reportDraft || "",
+        actions: localResponse.actions,
+      },
+      reason: "text_fallback",
+    };
   }
 
   const reportDraft = parsed.issueBody || localResponse.reportDraft || "";
