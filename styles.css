@@ -106,7 +106,7 @@ a {
   left: 50%;
   top: 0;
   z-index: 50;
-  width: min(97vw, calc((100svh + clamp(0.25rem, 0.45vw, 0.7rem)) * 1.7779), 1910px);
+  width: min(97vw, calc((100dvh + clamp(0.25rem, 0.45vw, 0.7rem)) * 1.7779), 1910px);
   transform: translateX(-50%);
   display: grid;
   grid-template-columns: minmax(12.2rem, 0.72fr) auto minmax(18rem, 1fr);
@@ -497,7 +497,7 @@ main {
 }
 
 .screen-section {
-  min-height: 100svh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
   padding: clamp(7.2rem, 8.8vw, 9.5rem) 1rem clamp(1.4rem, 3vw, 2.8rem);
@@ -510,8 +510,8 @@ main {
   }
 
   .screen-section {
-    min-height: 100svh;
-    height: 100svh;
+    min-height: 100dvh;
+    height: 100dvh;
     scroll-margin-top: 0;
   }
 
@@ -533,9 +533,10 @@ main {
 
 .screen-shell {
   position: relative;
-  width: min(96vw, calc((100svh - clamp(6.6rem, 10vw, 9rem)) * 1.7779), 1672px);
+  width: min(96vw, calc((100dvh - clamp(6.6rem, 10vw, 9rem)) * 1.7779), 1672px);
   aspect-ratio: 1672 / 941;
   filter: drop-shadow(0 30px 65px rgba(0, 0, 0, 0.72));
+  overflow: hidden;
 }
 
 .reveal-ready .screen-shell {
@@ -549,11 +550,11 @@ main {
 }
 
 .screen-home .screen-shell {
-  width: min(97vw, calc((100svh + clamp(0.25rem, 0.45vw, 0.7rem)) * 1.7779), 1910px);
+  width: min(95vw, calc((100dvh + clamp(0.25rem, 0.45vw, 0.7rem)) * 1.7779), 1910px);
 }
 
 .screen-demo .screen-shell {
-  width: min(97vw, calc((100svh + clamp(0.25rem, 0.45vw, 0.7rem)) * 1.7779), 1910px);
+  width: min(95vw, calc((100dvh + clamp(0.25rem, 0.45vw, 0.7rem)) * 1.7779), 1910px);
 }
 
 .reveal-ready .screen-home .screen-shell,
@@ -1267,7 +1268,7 @@ html.translated-rtl .home-copy p:not(.section-tag):not(.status-line) {
 }
 
 .screen-support .screen-shell {
-  width: min(97vw, calc((100svh + clamp(0.25rem, 0.45vw, 0.7rem)) * 1.7779), 1910px);
+  width: min(95vw, calc((100dvh + clamp(0.25rem, 0.45vw, 0.7rem)) * 1.7779), 1910px);
 }
 
 .screen-community,
@@ -1278,7 +1279,7 @@ html.translated-rtl .home-copy p:not(.section-tag):not(.status-line) {
 
 .screen-community .screen-shell,
 .screen-docs .screen-shell {
-  width: min(97vw, calc((100svh + clamp(0.25rem, 0.45vw, 0.7rem)) * 1.7779), 1910px);
+  width: min(95vw, calc((100dvh + clamp(0.25rem, 0.45vw, 0.7rem)) * 1.7779), 1910px);
 }
 
 .screen-support .side-copy {
