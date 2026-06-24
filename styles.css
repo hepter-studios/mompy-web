@@ -19,6 +19,7 @@
 
 html {
   scroll-behavior: smooth;
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -3879,3 +3880,4 @@ html.translated-rtl .home-copy p:not(.section-tag):not(.status-line) {
     animation: none !important;
   }
 }
+
