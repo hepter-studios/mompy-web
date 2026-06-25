@@ -8,7 +8,7 @@ const DEMO_VIDEO_SRC = "assets/media/mompy-demo.mp4";
 
 const siteLinks = {
   github: "https://github.com/hepter-studios/mompy",
-  download: "https://github.com/hepter-studios/mompy/releases/download/v0.1.1/MompySetup-v0.1.1.exe",
+  download: "https://github.com/hepter-studios/mompy/releases/download/v0.1.2/MompySetup-v0.1.2.exe",
   issues: "https://github.com/hepter-studios/mompy/issues",
   discussions: "https://github.com/hepter-studios/mompy/discussions",
   discord: "https://discord.gg/fqxvyGFyfa",
@@ -20,7 +20,7 @@ document.querySelectorAll("[data-link]").forEach((link) => {
   if (url) link.href = url;
 
   if (link.dataset.link === "download") {
-    link.setAttribute("download", "MompySetup-v0.1.1.exe");
+    link.setAttribute("download", "MompySetup-v0.1.2.exe");
   }
 
   if (["download", "github", "issues", "discussions", "discord", "sponsor"].includes(link.dataset.link)) {
@@ -950,6 +950,55 @@ const looksLikeSupportFeedbackSuggestion = (text) =>
     normalizeSearchText(text)
   );
 
+const refineLocalSupportResponse = (message, response) => {
+  const normalized = normalizeSearchText(message);
+  const previousText = normalizeSearchText(supportConversationHistory.map((item) => item.text).join("\n"));
+  const portuguese = isPortugueseSupportMessage(message);
+  const confusion =
+    /\b(o que|que\?|nao entendi|tu nem sabe|voce nem sabe|porque me disse|por que me disse|como isso resolve|o que eu tenho a ver)\b/.test(
+      normalized
+    );
+  const languageCorrection = /\b(eu falo portugues|portugues|nao falo ingles|traduz|traduza)\b/.test(normalized);
+  const lessonFeedbackComplaint =
+    /\b(licao|lesson|missao|aula)\b/.test(normalized) &&
+    /\b(erro|errado|dando erro|feedback|linha|motivo|explica|explicar|onde errei|nao mostra)\b/.test(normalized);
+
+  if (languageCorrection) {
+    return {
+      ...response,
+      reply:
+        "Perfeito, vou falar em português. Me diga em uma frase o que aconteceu no Mompy e eu vou tentar separar o problema em passos claros antes de encaminhar qualquer coisa.",
+      category: response.category === "unclear" ? "conversation" : response.category,
+    };
+  }
+
+  if (confusion) {
+    return {
+      ...response,
+      reply: portuguese
+        ? "Você tem razão: eu me adiantei. Primeiro eu preciso entender o caso, não sair dizendo que é relatório. Me diga qual tela ou missão estava aberta e o que o Mompy mostrou quando você tentou avançar."
+        : "You're right: I got ahead of myself. First I need to understand the case, not jump to a report. Tell me which screen or mission was open and what Mompy showed.",
+      category: "unclear",
+    };
+  }
+
+  if (lessonFeedbackComplaint || (looksLikeSupportFeedbackSuggestion(message) && /\b(erro|errado|licao|missao)\b/.test(`${normalized} ${previousText}`))) {
+    return {
+      ...response,
+      reply: portuguese
+        ? "Entendi melhor: isso parece uma melhoria no feedback das lições, não necessariamente um bug. O ideal é o Mompy dizer onde o aluno errou, por que errou e qual resultado era esperado. Para eu te ajudar a transformar isso em algo útil para a equipe, me manda: número da missão, o código que você escreveu e a mensagem exata que apareceu."
+        : "I understand better: this sounds like an improvement to lesson feedback, not necessarily a bug. Mompy should tell learners where the answer went wrong, why, and what output was expected. Send me the mission number, the code you wrote, and the exact message Mompy showed.",
+      category: "feature request",
+      actions: [
+        { label: "Open Discussions", type: "external", target: supportAllowedLinks.discussions },
+        { label: "Open Learning Path", type: "external", target: supportAllowedLinks.learningPath },
+      ],
+    };
+  }
+
+  return response;
+};
+
 const scrollSupportChatToLatest = () => {
   if (!supportChat) return;
 
@@ -1086,7 +1135,7 @@ const getLocalSupportResponse = (message) => {
     .sort((a, b) => b.score - a.score || b.confidence - a.confidence)[0];
 
   if (!route) {
-    return {
+    return refineLocalSupportResponse(message, {
       reply: portuguese
         ? "Entendi. Me da so mais um detalhe: isso e sobre instalar ou abrir o Mompy, algum erro, uma aula, uma missao ou uma sugestao?"
         : "I understand. Give me one more detail: is this about installing or opening Mompy, an error, a lesson, a mission, or a suggestion?",
@@ -1097,12 +1146,12 @@ const getLocalSupportResponse = (message) => {
         { label: "Ask Community", type: "external", target: supportAllowedLinks.discord },
       ],
       reportDraft: "",
-    };
+    });
   }
 
   const reportDraft = route.reportKind === "feature" ? buildFeatureDraft(message) : route.reportKind ? buildSupportReport(message) : "";
 
-  return {
+  return refineLocalSupportResponse(message, {
     reply: portuguese ? portugueseSupportReplies[route.category] || route.reply : route.reply,
     category: route.category,
     confidence: route.confidence,
@@ -1111,7 +1160,7 @@ const getLocalSupportResponse = (message) => {
       payload: action.type === "issue_draft" ? reportDraft : action.payload,
     })),
     reportDraft,
-  };
+  });
 };
 
 const requestSupportAssistant = async (message) => {

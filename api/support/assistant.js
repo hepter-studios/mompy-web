@@ -1,12 +1,11 @@
 const MOMPY_APP_REPO = "hepter-studios/mompy";
 const MOMPY_WEB_REPO = "hepter-studios/mompy-web";
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.5-flash";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
 const GEMINI_FALLBACK_MODELS = [
   GEMINI_MODEL,
-  "gemini-2.5-flash-lite",
   "gemini-2.5-flash",
-  "gemini-2.0-flash-lite",
   "gemini-2.0-flash",
+  "gemini-2.0-flash-lite",
 ].filter((model, index, list) => model && list.indexOf(model) === index);
 
 const MOMPY_STATIC_CONTEXT = `
@@ -286,6 +285,56 @@ const classifyLocally = (message) => {
   };
 };
 
+const refineLocalResponse = (message, response, history = []) => {
+  const normalized = normalizeText(message);
+  const portuguese = isPortugueseMessage(message);
+  const previousText = normalizeText(history.map((item) => item.text).join("\n"));
+  const lessonFeedbackComplaint =
+    /\b(licao|lição|lesson|missao|missão|aula)\b/.test(normalized) &&
+    /\b(erro|errado|dando erro|feedback|linha|motivo|explica|explicar|onde errei|nao mostra|não mostra)\b/.test(normalized);
+  const confusion =
+    /\b(o que|que\?|nao entendi|não entendi|tu nem sabe|voce nem sabe|você nem sabe|porque me disse|por que me disse|como isso resolve|o que eu tenho a ver)\b/.test(normalized);
+  const languageCorrection = /\b(eu falo portugues|portugues|português|nao falo ingles|não falo inglês|traduz|traduza)\b/.test(normalized);
+
+  if (languageCorrection) {
+    return {
+      ...response,
+      reply:
+        "Perfeito, vou falar em português. Me diga em uma frase o que aconteceu no Mompy e eu vou tentar separar o problema em passos claros antes de encaminhar qualquer coisa.",
+      category: response.category === "unclear" ? "conversation" : response.category,
+      createIssue: false,
+    };
+  }
+
+  if (confusion) {
+    return {
+      ...response,
+      reply: portuguese
+        ? "Você tem razão: eu me adiantei. Primeiro eu preciso entender o caso, não sair dizendo que é relatório. Me diga qual tela ou missão estava aberta e o que o Mompy mostrou quando você tentou avançar."
+        : "You're right: I got ahead of myself. First I need to understand the case, not jump to a report. Tell me which screen or mission was open and what Mompy showed.",
+      category: "unclear",
+      createIssue: false,
+    };
+  }
+
+  if (lessonFeedbackComplaint || (looksLikeFeedbackSuggestion(message) && /\b(erro|errado|licao|lição|missao|missão)\b/.test(normalized + previousText))) {
+    return {
+      ...response,
+      reply: portuguese
+        ? "Entendi melhor: isso parece uma melhoria no feedback das lições, não necessariamente um bug. O ideal é o Mompy dizer onde o aluno errou, por que errou e qual resultado era esperado. Para eu te ajudar a transformar isso em algo útil para a equipe, me manda: número da missão, o código que você escreveu e a mensagem exata que apareceu."
+        : "I understand better: this sounds like an improvement to lesson feedback, not necessarily a bug. Mompy should tell learners where the answer went wrong, why, and what output was expected. Send me the mission number, the code you wrote, and the exact message Mompy showed.",
+      category: "feature request",
+      createIssue: false,
+      actions: [
+        { label: "Open Discussions", type: "external", target: allowedLinks.discussions },
+        { label: "Open Learning Path", type: "external", target: allowedLinks.learningPath },
+      ],
+    };
+  }
+
+  return response;
+};
+
 let repositoryContextCache;
 let repositoryContextTime = 0;
 
@@ -531,12 +580,11 @@ const callGemini = async ({ message, localResponse, page, context, history }) =>
             generationConfig: {
               temperature: 0.45,
               topP: 0.9,
-              maxOutputTokens: 700,
-              responseMimeType: "application/json",
+              maxOutputTokens: 520,
             },
           }),
         },
-        8000
+        4500
       );
 
       if (!geminiResponse.ok) {
@@ -705,6 +753,7 @@ module.exports = async function handler(req, res) {
         : "I'm here. Tell me in one sentence what you want to do next in Mompy, or which part felt confusing.",
     };
   }
+  localResponse = refineLocalResponse(message, localResponse, history);
   const escalationReady = wantsEscalation(message) || hasEnoughIssueContext(message, history);
   let response = localResponse;
   let source = "local";
@@ -731,7 +780,12 @@ module.exports = async function handler(req, res) {
     source = "local";
   }
 
-  if (!escalationReady && ["bug", "startup", "installation"].includes(normalizeText(response.category))) {
+  const escalationCategory = ["bug", "startup", "installation"].includes(normalizeText(response.category));
+  if (source === "local" && escalationReady && escalationCategory && !looksLikeFeedbackSuggestion(message)) {
+    response.createIssue = true;
+  }
+
+  if (!escalationReady && escalationCategory) {
     response.createIssue = false;
   }
 

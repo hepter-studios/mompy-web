@@ -2,10 +2,10 @@ const docsLinks = {
   website: "https://mompy.co",
   github: "https://github.com/hepter-studios/mompy",
   releases: "https://github.com/hepter-studios/mompy/releases",
-  download: "https://github.com/hepter-studios/mompy/releases/download/v0.1.1/MompySetup-v0.1.1.exe",
-  latestRelease: "https://github.com/hepter-studios/mompy/releases/tag/v0.1.1",
-  installer: "https://github.com/hepter-studios/mompy/releases/download/v0.1.1/MompySetup-v0.1.1.exe",
-  portableZip: "https://github.com/hepter-studios/mompy/releases/download/v0.1.1/Mompy-windows-x64.zip",
+  download: "https://github.com/hepter-studios/mompy/releases/download/v0.1.2/MompySetup-v0.1.2.exe",
+  latestRelease: "https://github.com/hepter-studios/mompy/releases/tag/v0.1.2",
+  installer: "https://github.com/hepter-studios/mompy/releases/download/v0.1.2/MompySetup-v0.1.2.exe",
+  portableZip: "https://github.com/hepter-studios/mompy/releases/download/v0.1.2/Mompy-windows-x64.zip",
   issues: "https://github.com/hepter-studios/mompy/issues",
   newIssue: "https://github.com/hepter-studios/mompy/issues/new",
   discussions: "https://github.com/hepter-studios/mompy/discussions",
@@ -170,7 +170,7 @@ const docsSections = [
     tags: ["download", "installer", "portable zip", "windows", "progress", "update"],
     blocks: [
       { type: "heading", text: "Download Mompy" },
-      { type: "p", text: "The current public release is Mompy v0.1.1. Official builds are distributed through GitHub Releases." },
+      { type: "p", text: "The current public release is Mompy v0.1.2. Official builds are distributed through GitHub Releases." },
       {
         type: "cards",
         items: [
