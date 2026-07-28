@@ -1702,7 +1702,7 @@ html.translated-rtl .home-copy p:not(.section-tag):not(.status-line) {
 }
 
 .screen-docs .side-copy p:not(.section-tag) {
-  max-width: 22rem;
+  max-width: 18.7rem;
   font-size: clamp(0.66rem, 0.84vw, 0.94rem);
   line-height: 1.44;
 }
@@ -1840,7 +1840,9 @@ html.translated-rtl .home-copy p:not(.section-tag):not(.status-line) {
   align-self: end;
   justify-self: start;
   min-width: clamp(5.9rem, 7vw, 7.6rem);
+  min-height: clamp(1.02rem, 1.32vw, 1.42rem);
   display: inline-flex;
+  align-items: center;
   justify-content: center;
   padding: 0.32rem 0.48rem;
   color: var(--green);
@@ -1851,6 +1853,11 @@ html.translated-rtl .home-copy p:not(.section-tag):not(.status-line) {
   text-decoration: none;
   text-transform: uppercase;
   white-space: nowrap;
+  line-height: 1;
+}
+
+.community-board__item:nth-child(4) a {
+  transform: translateY(0.18rem);
 }
 
 .community-board__item a:hover,
