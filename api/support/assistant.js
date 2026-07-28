@@ -104,14 +104,48 @@ const cleanGeminiText = (text) =>
 
 const extractLooseJsonReply = (text) => {
   const value = cleanGeminiText(text);
-  const match = value.match(/"reply"\s*:\s*"([\s\S]*?)(?:"\s*,\s*"(?:category|confidence|shouldCreateIssue|issueTitle|issueBody|actions)|"\s*\})/);
+  const match = value.match(/"reply"\s*:\s*"/);
   if (!match) return "";
 
-  return match[1]
-    .replace(/\\n/g, "\n")
-    .replace(/\\"/g, '"')
-    .replace(/\\\\/g, "\\")
-    .trim();
+  const raw = value.slice(match.index + match[0].length);
+  let captured = "";
+  let escaped = false;
+
+  for (let index = 0; index < raw.length; index += 1) {
+    const char = raw[index];
+
+    if (escaped) {
+      captured += `\\${char}`;
+      escaped = false;
+      continue;
+    }
+
+    if (char === "\\") {
+      escaped = true;
+      continue;
+    }
+
+    if (char === '"') {
+      const tail = raw.slice(index + 1);
+      if (/^\s*,\s*"(?:category|confidence|shouldCreateIssue|issueTitle|issueBody|actions)"\s*:/.test(tail) || /^\s*}/.test(tail)) {
+        break;
+      }
+    }
+
+    captured += char;
+  }
+
+  if (!captured.trim()) return "";
+
+  try {
+    return JSON.parse(`"${captured.replace(/"/g, '\\"')}"`).trim();
+  } catch {
+    return captured
+      .replace(/\\n/g, "\n")
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, "\\")
+      .trim();
+  }
 };
 
 const buildIssueDraft = (message, category) =>
@@ -620,6 +654,7 @@ const callGemini = async ({ message, localResponse, page, context, history }) =>
               temperature: 0.45,
               topP: 0.9,
               maxOutputTokens: 360,
+              responseMimeType: "application/json",
             },
           }),
         },
