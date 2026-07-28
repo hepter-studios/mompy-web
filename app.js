@@ -922,6 +922,7 @@ const supportRoutes = [
 
 let supportReportDraft = "";
 let supportConversationHistory = [];
+let supportPreferredLanguage = document.documentElement.lang?.toLowerCase().startsWith("pt") ? "pt-BR" : "en";
 
 const portugueseSupportReplies = {
   bug: "Pode ser um bug, mas preciso entender melhor primeiro. Em qual tela ou missão isso aconteceu, e que mensagem o Mompy mostrou?",
@@ -938,6 +939,14 @@ const isPortugueseSupportMessage = (text) =>
   /\b(oi|ola|olhe|bom dia|boa tarde|boa noite|voce|tu|nao|sem|so|estou|testando|teste|conversa|normal|erro|ajuda|instalar|abrir|missao|licao|problema|sugestao|melhoria|coisa|entendi|disse)\b/i.test(
     normalizeSearchText(text)
   );
+
+const detectSupportLanguage = (text) => {
+  const normalized = normalizeSearchText(text);
+  if (/\b(i speak english|english please|speak english|use english|in english)\b/.test(normalized)) return "en";
+  if (/\b(eu falo portugues|portugues|nao falo ingles|fala portugues|em portugues|pt-br|brasileiro)\b/.test(normalized)) return "pt-BR";
+  if (isPortugueseSupportMessage(text)) return "pt-BR";
+  return supportPreferredLanguage || "en";
+};
 
 const isSupportGreetingOnly = (text) =>
   /^(oi|ola|hi|hello|hey|olhe|look|bom dia|boa tarde|boa noite|e ai)[\s!.?]*$/i.test(normalizeSearchText(text));
@@ -1176,6 +1185,8 @@ const requestSupportAssistant = async (message) => {
         page: location.href,
         userAgent: navigator.userAgent,
         context: document.body.dataset.activeSection || "",
+        preferredLanguage: supportPreferredLanguage,
+        browserLanguage: navigator.language || "",
         history: supportConversationHistory.slice(-8),
       }),
       signal: controller.signal,
@@ -1239,7 +1250,7 @@ const addSupportAction = (action) => {
 
 const respondToSupportMessage = async (message) => {
   clearSupportActions();
-  const pendingMessage = appendSupportMessage("assistant", isPortugueseSupportMessage(message) ? "Pensando" : "Thinking");
+  const pendingMessage = appendSupportMessage("assistant", supportPreferredLanguage === "pt-BR" ? "Pensando" : "Thinking");
   pendingMessage?.classList.add("is-thinking");
 
   const response = await requestSupportAssistant(message);
@@ -1265,6 +1276,7 @@ supportForm?.addEventListener("submit", (event) => {
   if (!message) return;
 
   appendSupportMessage("user", message);
+  supportPreferredLanguage = detectSupportLanguage(message);
   supportConversationHistory.push({ role: "user", text: message });
   supportConversationHistory = supportConversationHistory.slice(-10);
   supportInput.value = "";

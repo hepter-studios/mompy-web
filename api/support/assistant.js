@@ -40,6 +40,34 @@ const isPortugueseMessage = (text) =>
     normalizeText(text)
   );
 
+const wantsEnglish = (text) =>
+  /\b(i speak english|english please|speak english|use english|in english|english)\b/i.test(normalizeText(text));
+
+const wantsPortuguese = (text) =>
+  /\b(eu falo portugues|eu falo português|portugues|português|nao falo ingles|não falo inglês|fala portugues|fala português|em portugues|em português|pt-br|brasileiro)\b/i.test(
+    normalizeText(text)
+  );
+
+const normalizePreferredLanguage = (preferredLanguage, browserLanguage, message, history = []) => {
+  if (wantsEnglish(message)) return "en";
+  if (wantsPortuguese(message) || isPortugueseMessage(message)) return "pt-BR";
+
+  const preferred = normalizeText(preferredLanguage);
+  if (preferred.startsWith("pt")) return "pt-BR";
+  if (preferred.startsWith("en")) return "en";
+
+  const previousUserMessage = [...history].reverse().find((item) => item.role === "user")?.text || "";
+  if (wantsPortuguese(previousUserMessage) || isPortugueseMessage(previousUserMessage)) return "pt-BR";
+  if (wantsEnglish(previousUserMessage)) return "en";
+
+  const browser = normalizeText(browserLanguage);
+  if (browser.startsWith("pt")) return "pt-BR";
+  return "en";
+};
+
+const shouldUsePortuguese = (language, text = "") =>
+  language === "pt-BR" || wantsPortuguese(text) || isPortugueseMessage(text);
+
 const isGreetingOnly = (text) =>
   /^(oi|ola|olá|hi|hello|hey|olhe|look|bom dia|boa tarde|boa noite|e ai|e aí)[\s!.?]*$/i.test(normalizeText(text));
 
@@ -274,9 +302,9 @@ const portugueseRouteReplies = {
   "account/community": "Para conversa rápida, use o Discord. Para perguntas que precisam ficar registradas, use o GitHub Discussions.",
 };
 
-const classifyLocally = (message) => {
+const classifyLocally = (message, preferredLanguage = "en") => {
   const normalized = normalizeText(message);
-  const portuguese = isPortugueseMessage(message);
+  const portuguese = shouldUsePortuguese(preferredLanguage, message);
 
   if (isGreetingOnly(message)) {
     return {
@@ -338,9 +366,9 @@ const classifyLocally = (message) => {
   };
 };
 
-const refineLocalResponse = (message, response, history = []) => {
+const refineLocalResponse = (message, response, history = [], preferredLanguage = "en") => {
   const normalized = normalizeText(message);
-  const portuguese = isPortugueseMessage(message);
+  const portuguese = shouldUsePortuguese(preferredLanguage, message);
   const previousText = normalizeText(history.map((item) => item.text).join("\n"));
   const lessonFeedbackComplaint =
     /\b(licao|lição|lesson|missao|missão|aula)\b/.test(normalized) &&
@@ -472,10 +500,18 @@ const getRepositoryContext = async () => {
   }
 };
 
-const buildGeminiPrompt = ({ message, localResponse, page, context, repositoryContext, history }) => `
+const buildGeminiPrompt = ({ message, localResponse, page, context, repositoryContext, history, preferredLanguage }) => `
 You are Mompy Support, the human-like support assistant for Mompy.
 
-Mission: talk naturally with the user, understand the problem, help solve it, and collect useful details for the Mompy team. Always answer in the user's language. If the user writes Portuguese, use Brazilian Portuguese. If the user switches language, follow them.
+Mission: talk naturally with the user, understand the problem, help solve it, and collect useful details for the Mompy team.
+
+Preferred language for the next reply: ${preferredLanguage === "pt-BR" ? "Brazilian Portuguese" : "English"}.
+
+Language rule:
+- Start in English by default.
+- If the preferred language is Brazilian Portuguese or the latest user message is Portuguese, answer naturally in Brazilian Portuguese.
+- Keep the same language across the conversation until the user asks to switch.
+- If you previously answered in the wrong language, apologize briefly once and continue in the correct language.
 
 Mompy: a retro Python learning console for beginners with lessons, missions, a code editor, validation feedback, local progress, docs, support, community, releases, and GitHub issues/discussions.
 
@@ -486,9 +522,10 @@ Behavior:
 - For greetings or vague messages, ask one warm, specific follow-up question.
 - Help with installation, opening/running the app, lessons, missions, Python beginner concepts, bugs, ideas, docs, community, and downloads.
 - Try to solve or narrow the problem before routing. Give practical next steps the user can try now.
+- Ask like a competent support person: one useful question at a time, based on what the user already said.
 - Do not expose secrets, tokens, webhook URLs, private config, or internal implementation details.
 - Do not say an issue was created unless the backend later adds the issue URL.
-- The backend may notify Discord internally for triage; do not mention that to the user unless a GitHub issue URL is actually returned.
+- The backend may notify Discord internally for triage; do not mention internal notifications to the user.
 - Do not classify "sem bug", "no bug", "not a bug", "sem erro", or "no error" as a bug.
 - If the user says it is a suggestion, feedback, "não é bug", "não é um bug de verdade", or talks about improving lesson/error feedback, classify as "feature request", not "bug".
 - For lesson validation feedback complaints, explain that the useful details are: mission number, code typed, exact message Mompy showed, and what feedback they expected. Suggest better feedback ideas such as line location, expected output, and a small hint.
@@ -624,7 +661,7 @@ const parseGeminiResponse = async (response, localResponse, message, history) =>
   };
 };
 
-const callGemini = async ({ message, localResponse, page, context, history }) => {
+const callGemini = async ({ message, localResponse, page, context, history, preferredLanguage }) => {
   if (!process.env.GEMINI_API_KEY) {
     return {
       response: null,
@@ -639,7 +676,7 @@ const callGemini = async ({ message, localResponse, page, context, history }) =>
   } catch {
     repositoryContext = MOMPY_STATIC_CONTEXT;
   }
-  const prompt = buildGeminiPrompt({ message, localResponse, page, context, repositoryContext, history });
+  const prompt = buildGeminiPrompt({ message, localResponse, page, context, repositoryContext, history, preferredLanguage });
 
   for (const model of GEMINI_FALLBACK_MODELS) {
     try {
@@ -653,12 +690,12 @@ const callGemini = async ({ message, localResponse, page, context, history }) =>
             generationConfig: {
               temperature: 0.45,
               topP: 0.9,
-              maxOutputTokens: 360,
+              maxOutputTokens: 720,
               responseMimeType: "application/json",
             },
           }),
         },
-        4500
+        9000
       );
 
       if (!geminiResponse.ok) {
@@ -693,7 +730,13 @@ const callGemini = async ({ message, localResponse, page, context, history }) =>
   };
 };
 
-const createGitHubIssue = async ({ message, response, page, userAgent }) => {
+const formatConversationForReport = (history, latestMessage) =>
+  [...history, { role: "user", text: latestMessage }]
+    .slice(-10)
+    .map((item) => `${item.role === "assistant" ? "Assistant" : "User"}: ${truncate(item.text, 900)}`)
+    .join("\n\n");
+
+const createGitHubIssue = async ({ message, response, page, userAgent, history }) => {
   if (!process.env.GITHUB_TOKEN) {
     return { issue: null, diagnostic: { configured: false, ok: false, reason: "missing_env" } };
   }
@@ -705,6 +748,9 @@ const createGitHubIssue = async ({ message, response, page, userAgent }) => {
   const titleBase = response.issueTitle || `[Support] ${response.category}: ${message.slice(0, 70)}`;
   const body = [
     response.reportDraft || buildIssueDraft(message, response.category),
+    "",
+    "Recent support conversation:",
+    formatConversationForReport(history, message),
     "",
     "---",
     "Created automatically from Mompy Support.",
@@ -813,21 +859,24 @@ module.exports = async function handler(req, res) {
   const userAgent = String(body.userAgent || "").slice(0, 300);
   const context = String(body.context || "").slice(0, 100);
   const history = sanitizeHistory(body.history);
+  const browserLanguage = String(body.browserLanguage || "").slice(0, 80);
+  const preferredLanguage = normalizePreferredLanguage(body.preferredLanguage, browserLanguage, message, history);
+  const portuguese = shouldUsePortuguese(preferredLanguage, message);
 
   if (!message) {
     return res.status(400).json({ error: "Missing message" });
   }
 
-  let localResponse = classifyLocally(message);
+  let localResponse = classifyLocally(message, preferredLanguage);
   if (isGreetingOnly(message) && history.length > 1) {
     localResponse = {
       ...localResponse,
-      reply: isPortugueseMessage(message)
+      reply: portuguese
         ? "Estou aqui. Me diz em uma frase o que você quer fazer agora no Mompy, ou qual parte ficou confusa."
         : "I'm here. Tell me in one sentence what you want to do next in Mompy, or which part felt confusing.",
     };
   }
-  localResponse = refineLocalResponse(message, localResponse, history);
+  localResponse = refineLocalResponse(message, localResponse, history, preferredLanguage);
   const escalationReady = wantsEscalation(message) || hasEnoughIssueContext(message, history);
   let response = localResponse;
   let source = "local";
@@ -838,7 +887,7 @@ module.exports = async function handler(req, res) {
   let discordDiagnostic = { configured: Boolean(process.env.DISCORD_WEBHOOK_URL), ok: false, reason: "not_called" };
 
   try {
-    const geminiResult = await callGemini({ message, localResponse, page, context, history });
+    const geminiResult = await callGemini({ message, localResponse, page, context, history, preferredLanguage });
     geminiDiagnostic = geminiResult?.diagnostic || geminiDiagnostic;
     if (geminiResult?.response) {
       response = geminiResult.response;
@@ -864,11 +913,11 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const githubResult = await createGitHubIssue({ message, response, page, userAgent });
+    const githubResult = await createGitHubIssue({ message, response, page, userAgent, history });
     issue = githubResult?.issue || null;
     githubDiagnostic = githubResult?.diagnostic || githubDiagnostic;
     if (issue?.url) {
-      response.reply = isPortugueseMessage(message)
+      response.reply = portuguese
         ? `${response.reply}\n\nEncaminhei isso para a equipe da Hepter Studios com os detalhes da conversa: ${issue.url}`
         : `${response.reply}\n\nI sent this to the Hepter Studios team with the conversation details: ${issue.url}`;
       response.actions = [
@@ -908,6 +957,7 @@ module.exports = async function handler(req, res) {
       source,
       issueUrl: issue?.url || null,
       discordNotified,
+      language: preferredLanguage,
       env: {
         gemini: Boolean(process.env.GEMINI_API_KEY),
         github: Boolean(process.env.GITHUB_TOKEN),
