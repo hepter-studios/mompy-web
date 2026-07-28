@@ -966,3 +966,48 @@
     border-right: 1px solid #d8e1e8;
   }
 }
+
+@media (max-width: 520px) {
+  .docs-main,
+  .docs-hero,
+  .docs-layout,
+  .docs-content,
+  .docs-section,
+  .docs-sidebar,
+  .docs-card,
+  .docs-footer {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .docs-main {
+    width: calc(100% - 1rem);
+    padding-top: 11rem;
+  }
+
+  .docs-hero {
+    padding: 1.35rem;
+  }
+
+  .docs-hero h1 {
+    max-width: 100%;
+    font-size: clamp(1.95rem, 9.2vw, 2.35rem);
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+
+  .docs-hero p,
+  .docs-section p,
+  .docs-section li,
+  .docs-card p {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .docs-hero__actions a {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}

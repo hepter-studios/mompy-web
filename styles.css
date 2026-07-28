@@ -3881,6 +3881,461 @@ html.translated-rtl .home-copy p:not(.section-tag):not(.status-line) {
   }
 }
 
+/* Mobile uses dedicated portrait/tablet artwork as a nine-slice frame. The
+   metal edges stay proportional while the CRT center grows with the content. */
+@media (max-width: 900px) {
+  body {
+    overflow-x: clip;
+  }
+
+  .site-header {
+    gap: 0.5rem 0.65rem;
+  }
+
+  .header-actions {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .site-search,
+  .header-actions a {
+    min-width: 0;
+  }
+
+  .screen-section {
+    display: block;
+    padding: 1.5rem 0.65rem 2rem;
+    scroll-margin-top: 9rem;
+  }
+
+  .screen-section:first-child {
+    padding-top: 11.75rem;
+  }
+
+  .screen-shell,
+  .screen-home .screen-shell,
+  .screen-demo .screen-shell,
+  .screen-support .screen-shell,
+  .screen-community .screen-shell,
+  .screen-docs .screen-shell {
+    --responsive-frame: url("assets/frames/tablet.webp");
+    width: 100%;
+    min-height: 0;
+    display: grid;
+    gap: 1.5rem;
+    padding: 1.15rem;
+    overflow: hidden;
+    border-style: solid;
+    border-color: transparent;
+    border-width: 3.1rem 2.8rem 3.35rem;
+    border-image-source: var(--responsive-frame);
+    border-image-slice: 10% 6% 10% 6% fill;
+    border-image-width: 1;
+    border-image-repeat: stretch;
+    border-radius: 0;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(120, 255, 45, 0.12), transparent 48%),
+      repeating-linear-gradient(180deg, rgba(120, 255, 45, 0.035) 0 1px, transparent 1px 4px),
+      linear-gradient(180deg, #0a2109 0%, #041005 56%, #020602 100%);
+    box-shadow:
+      inset 0 0 0 1px rgba(236, 255, 218, 0.045),
+      inset 0 0 3.2rem rgba(0, 0, 0, 0.56),
+      0 1.2rem 2.6rem rgba(0, 0, 0, 0.42);
+  }
+
+  .screen-frame,
+  .screen-shell::after {
+    display: none;
+  }
+
+  .home-copy,
+  .home-monitor,
+  .side-copy,
+  .demo-panel,
+  .support-console,
+  .community-console,
+  .docs-console {
+    position: static;
+    width: auto;
+    height: auto;
+    min-height: 0;
+    margin: 0;
+  }
+
+  .home-copy,
+  .side-copy {
+    display: grid;
+    align-content: start;
+    gap: 0.7rem;
+  }
+
+  .home-copy .section-tag,
+  .side-copy .section-tag {
+    margin: 0;
+  }
+
+  .screen-home .home-copy h1,
+  html.translated-ltr .screen-home .home-copy h1,
+  html.translated-rtl .screen-home .home-copy h1 {
+    max-width: 11ch;
+    font-size: clamp(2.15rem, 10vw, 3rem);
+    line-height: 1.12;
+  }
+
+  .home-copy p:not(.section-tag):not(.status-line),
+  .side-copy p:not(.section-tag),
+  html.translated-ltr .home-copy p:not(.section-tag):not(.status-line),
+  html.translated-rtl .home-copy p:not(.section-tag):not(.status-line) {
+    max-width: 34ch;
+    margin: 0;
+    font-size: 0.92rem;
+    line-height: 1.55;
+  }
+
+  .screen-home .action-row,
+  .screen-home .side-actions {
+    position: static;
+    width: 100%;
+    margin: 0.45rem 0 0;
+  }
+
+  .screen-home .crt-button {
+    flex: initial;
+  }
+
+  .home-monitor {
+    min-height: 17rem;
+    display: grid;
+    place-items: center;
+    padding: 0.35rem;
+    border-top: 1px solid rgba(120, 255, 45, 0.16);
+  }
+
+  .home-monitor img {
+    width: min(78vw, 19rem);
+    height: auto;
+    max-height: 20rem;
+    transform: none;
+  }
+
+  .screen-demo .side-copy,
+  .screen-support .side-copy,
+  .screen-community .side-copy,
+  .screen-docs .side-copy {
+    width: auto;
+  }
+
+  .screen-demo .side-copy h2,
+  .screen-support .side-copy h2,
+  .screen-community .side-copy h2,
+  .screen-docs .side-copy h2 {
+    max-width: 12ch;
+    font-size: clamp(2rem, 9vw, 3rem);
+    line-height: 1.14;
+  }
+
+  .screen-demo .side-actions {
+    width: 100%;
+    margin: 0.65rem 0 0;
+  }
+
+  .demo-panel {
+    aspect-ratio: 16 / 9;
+    min-height: 0;
+    border: 1px solid rgba(120, 255, 45, 0.32);
+    border-radius: 0.55rem;
+  }
+
+  .support-console,
+  .community-console,
+  .docs-console {
+    display: block;
+    padding: 0;
+  }
+
+  .support-terminal {
+    min-height: 34rem;
+    padding: 1rem;
+    border: 1px solid rgba(120, 255, 45, 0.28);
+    border-radius: 0.45rem;
+    background: rgba(0, 0, 0, 0.22);
+  }
+
+  .support-terminal__header {
+    padding: 0 0 0.75rem;
+  }
+
+  .support-terminal__body {
+    padding: 0;
+  }
+
+  .support-assistant-card {
+    min-height: 7.5rem;
+    padding: 0.45rem;
+  }
+
+  .community-console,
+  .docs-console {
+    border: 1px solid rgba(120, 255, 45, 0.28);
+    border-radius: 0.45rem;
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .community-board,
+  .docs-index {
+    min-height: 0;
+    padding: 1rem;
+  }
+
+  .community-board__header,
+  .docs-index__header {
+    position: static;
+    min-height: 0;
+    justify-content: flex-start;
+    padding: 0 0 0.75rem;
+    border-bottom: 1px solid rgba(120, 255, 45, 0.2);
+  }
+
+  .community-board__header div {
+    justify-content: flex-start;
+  }
+
+  .community-board__items,
+  .docs-index__items {
+    position: static;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    margin-top: 0.25rem;
+    overflow: visible;
+  }
+
+  .community-board__item,
+  .docs-index__item {
+    padding: 0.9rem 0;
+  }
+
+  .community-board__item h3,
+  .docs-index__item h3 {
+    font-size: 0.95rem;
+  }
+
+  .community-board__item p,
+  .docs-index__item p {
+    max-width: none;
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+
+  .community-board__item a {
+    min-height: 2rem;
+    margin-top: 0.35rem;
+    font-size: 0.64rem;
+  }
+
+  .community-socials {
+    position: static;
+    margin-top: 0.2rem;
+  }
+
+  .screen-docs .crt-button.large {
+    width: 100%;
+    margin-top: 0.65rem;
+  }
+}
+
+@media (max-width: 520px) {
+  *,
+  *::before,
+  *::after {
+    min-width: 0;
+  }
+
+  .site-header {
+    left: 0.5rem;
+    right: 0.5rem;
+    gap: 0.42rem;
+    padding-bottom: 0.55rem;
+  }
+
+  .brand-mark img {
+    width: 8.15rem;
+  }
+
+  .brand-download {
+    width: 1.42rem;
+    height: 1.42rem;
+  }
+
+  .nav-links a {
+    min-height: 2.12rem;
+    padding-inline: 0.82rem;
+    font-size: 0.78rem;
+  }
+
+  .header-actions {
+    grid-template-columns: minmax(0, 1fr) 4.7rem;
+    gap: 0.42rem;
+  }
+
+  .header-actions a {
+    min-height: 2.15rem;
+    padding-inline: 0.42rem;
+    font-size: 0.64rem;
+  }
+
+  .site-search {
+    grid-template-columns: 2.35rem minmax(0, 1fr) 2.7rem;
+  }
+
+  .site-search input {
+    padding-inline: 0.55rem;
+    font-size: 0.7rem;
+  }
+
+  .screen-section {
+    padding: 1rem 0.5rem 1.5rem;
+    scroll-margin-top: 8.75rem;
+  }
+
+  .screen-section:first-child {
+    padding-top: 11.25rem;
+  }
+
+  .screen-shell,
+  .screen-home .screen-shell,
+  .screen-demo .screen-shell,
+  .screen-support .screen-shell,
+  .screen-community .screen-shell,
+  .screen-docs .screen-shell {
+    gap: 1.2rem;
+    padding: 0.85rem 0.7rem;
+  }
+
+  .home-copy,
+  .side-copy,
+  .learn-main,
+  .learn-hero,
+  .learn-layout,
+  .learn-content,
+  .learn-panel,
+  .learn-sidebar,
+  .learn-mini-panel {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .action-row,
+  .screen-home .action-row {
+    grid-template-columns: 1fr;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .action-row .crt-button,
+  .screen-home .crt-button,
+  .action-row .crt-button:nth-child(3) {
+    grid-column: auto;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .screen-home .home-copy h1,
+  html.translated-ltr .screen-home .home-copy h1,
+  html.translated-rtl .screen-home .home-copy h1 {
+    font-size: clamp(2rem, 10.4vw, 2.55rem);
+  }
+
+  .learn-main {
+    width: calc(100% - 1rem);
+    padding-top: 11rem;
+  }
+
+  .learn-hero {
+    padding: 1.35rem;
+  }
+
+  .learn-hero h1 {
+    max-width: 100%;
+    font-size: clamp(2.15rem, 12vw, 2.7rem);
+    overflow-wrap: anywhere;
+  }
+
+  .learn-hero p:not(.section-tag),
+  .learn-panel p,
+  .learn-panel li {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .home-monitor {
+    min-height: 14rem;
+  }
+
+  .support-terminal {
+    min-height: 31rem;
+    padding: 0.78rem;
+  }
+
+  .support-form {
+    grid-template-columns: 2.2rem minmax(0, 1fr) 3.9rem;
+  }
+
+  .support-form input {
+    padding-inline: 0.58rem;
+    font-size: 0.72rem;
+  }
+
+  .support-form button {
+    padding-inline: 0.35rem;
+    font-size: 0.62rem;
+  }
+}
+
+@media (max-width: 374px) {
+  .screen-shell,
+  .screen-home .screen-shell,
+  .screen-demo .screen-shell,
+  .screen-support .screen-shell,
+  .screen-community .screen-shell,
+  .screen-docs .screen-shell {
+    --responsive-frame: url("assets/frames/mobile-small.webp");
+    border-width: 4.25rem 1.2rem 4.5rem;
+    border-image-slice: 9% 9% 10% 9% fill;
+    padding: 0.68rem 0.48rem;
+  }
+}
+
+@media (min-width: 375px) and (max-width: 600px) {
+  .screen-shell,
+  .screen-home .screen-shell,
+  .screen-demo .screen-shell,
+  .screen-support .screen-shell,
+  .screen-community .screen-shell,
+  .screen-docs .screen-shell {
+    --responsive-frame: url("assets/frames/mobile-standard.webp");
+    border-width: 3.25rem 1.45rem 3.45rem;
+    border-image-slice: 9% 10% 9% 10% fill;
+  }
+}
+
+@media (min-width: 601px) and (max-width: 900px) {
+  .screen-shell,
+  .screen-home .screen-shell,
+  .screen-demo .screen-shell,
+  .screen-support .screen-shell,
+  .screen-community .screen-shell,
+  .screen-docs .screen-shell {
+    --responsive-frame: url("assets/frames/tablet.webp");
+    border-width: 3rem 2.65rem 3.2rem;
+    border-image-slice: 10% 6% 10% 6% fill;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
