@@ -95,6 +95,25 @@ const safeJsonParse = (text) => {
   }
 };
 
+const cleanGeminiText = (text) =>
+  String(text || "")
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+
+const extractLooseJsonReply = (text) => {
+  const value = cleanGeminiText(text);
+  const match = value.match(/"reply"\s*:\s*"([\s\S]*?)(?:"\s*,\s*"(?:category|confidence|shouldCreateIssue|issueTitle|issueBody|actions)|"\s*\})/);
+  if (!match) return "";
+
+  return match[1]
+    .replace(/\\n/g, "\n")
+    .replace(/\\"/g, '"')
+    .replace(/\\\\/g, "\\")
+    .trim();
+};
+
 const buildIssueDraft = (message, category) =>
   [
     `Mompy ${category === "feature request" ? "feature request" : "issue report"}`,
@@ -461,9 +480,11 @@ Local hint: category=${localResponse.category}, confidence=${localResponse.confi
 Page: ${page || "unknown"} / section ${context || "unknown"}
 Latest user message: ${message}
 
+Keep the reply under 550 characters. Prefer one useful answer plus one short follow-up question.
+
 Return strict JSON only, with no markdown:
 {
-  "reply": "clear conversational support response, 1-3 short paragraphs max",
+  "reply": "clear conversational support response, under 550 characters",
   "category": "bug|startup|installation|lesson|mission|feature request|documentation|account/community|unclear",
   "confidence": 0.0,
   "shouldCreateIssue": false,
@@ -506,12 +527,30 @@ const parseGeminiResponse = async (response, localResponse, message, history) =>
   }
 
   const text = data.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("\n") || "";
-  const parsed = safeJsonParse(text);
+  const cleanedText = cleanGeminiText(text);
+  const parsed = safeJsonParse(cleanedText) || safeJsonParse(text);
   if (!parsed || typeof parsed.reply !== "string") {
-    const plainReply = text
-      .replace(/^```(?:json)?/i, "")
-      .replace(/```$/i, "")
-      .trim();
+    const looseReply = extractLooseJsonReply(cleanedText);
+    if (looseReply) {
+      return {
+        response: {
+          reply: looseReply.slice(0, 900),
+          category: localResponse.category,
+          confidence: Math.max(localResponse.confidence || 0.5, 0.55),
+          createIssue: false,
+          issueTitle: "",
+          reportDraft: localResponse.reportDraft || "",
+          actions: localResponse.actions,
+        },
+        reason: "loose_json_reply",
+      };
+    }
+
+    if (/^\{/.test(cleanedText) || /"reply"\s*:/.test(cleanedText)) {
+      return { response: null, reason: "malformed_json" };
+    }
+
+    const plainReply = cleanedText;
 
     if (!plainReply) return { response: null, reason: "parse_failed" };
 
@@ -580,7 +619,7 @@ const callGemini = async ({ message, localResponse, page, context, history }) =>
             generationConfig: {
               temperature: 0.45,
               topP: 0.9,
-              maxOutputTokens: 520,
+              maxOutputTokens: 360,
             },
           }),
         },
