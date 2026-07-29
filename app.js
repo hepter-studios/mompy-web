@@ -57,6 +57,11 @@ const baseSearchItems = [
     target: "index.html#home",
   },
   {
+    title: "Download Mompy",
+    text: "Download and install the latest Mompy Windows release.",
+    target: "download.html",
+  },
+  {
     title: "Learn with Mompy",
     text: "Lessons, missions, feedback, progress, beginner practice, and learning path.",
     target: "learn.html",

@@ -4,4 +4,8 @@
     <loc>https://mompy.co/</loc>
     <priority>1.0</priority>
   </url>
+  <url>
+    <loc>https://mompy.co/download</loc>
+    <priority>0.7</priority>
+  </url>
 </urlset>

@@ -4346,3 +4346,650 @@ html.translated-rtl .home-copy p:not(.section-tag):not(.status-line) {
   }
 }
 
+/* Download and installation page */
+.install-page {
+  min-height: 100vh;
+  color: #1c252b;
+  background: #f3f6f1;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.install-page::before,
+.install-page .site-noise {
+  display: none;
+}
+
+.install-main {
+  width: 100%;
+  margin: 0 auto;
+  padding: clamp(6.8rem, 7.5vw, 8.6rem) 0 0;
+}
+
+.install-masthead {
+  min-height: clamp(17rem, 34vh, 25rem);
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 1rem;
+  padding: clamp(3.5rem, 6vw, 6rem) 1.5rem;
+  text-align: center;
+  color: #f9fbf7;
+  background:
+    linear-gradient(180deg, rgba(3, 7, 5, 0.46), rgba(3, 7, 5, 0.72)),
+    radial-gradient(circle at 50% 0%, rgba(120, 255, 45, 0.16), transparent 30rem),
+    #101710;
+}
+
+.install-masthead .install-kicker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  margin: 0;
+  color: rgba(236, 246, 232, 0.76);
+  font-size: 0.78rem;
+  letter-spacing: 0.2em;
+}
+
+.install-masthead .install-kicker::before,
+.install-masthead .install-kicker::after {
+  content: "";
+  width: 2.15rem;
+  height: 1px;
+  background: rgba(236, 246, 232, 0.38);
+}
+
+.install-masthead h1 {
+  margin: 0;
+  color: #ffffff;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: clamp(3rem, 6vw, 6rem);
+  font-weight: 780;
+  line-height: 1;
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
+.install-masthead .install-lead {
+  max-width: 49rem;
+  margin: 0;
+  color: rgba(245, 250, 242, 0.8);
+  font-size: clamp(1.05rem, 1.5vw, 1.3rem);
+  line-height: 1.65;
+}
+
+.install-document-wrap {
+  background: #ffffff;
+}
+
+.install-document {
+  width: min(100% - 2rem, 1120px);
+  margin: 0 auto;
+  padding: clamp(3rem, 6vw, 6rem) 0 clamp(4.5rem, 7vw, 7rem);
+}
+
+.install-hero,
+.install-content,
+.install-options {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.install-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(19rem, 0.75fr);
+  gap: clamp(2.5rem, 6vw, 5.5rem);
+  align-items: center;
+  min-height: 23rem;
+  padding: 0 0 clamp(3.5rem, 6vw, 5rem);
+  border-bottom: 1px solid #dfe5dc;
+  position: relative;
+}
+
+.install-hero::before,
+.install-content::before,
+.install-options::before {
+  content: none;
+}
+
+.install-hero,
+.install-content,
+.install-options {
+  position: relative;
+}
+
+.install-hero__copy,
+.install-content__intro,
+.install-options > * {
+  position: relative;
+  z-index: 1;
+}
+
+.install-kicker {
+  margin: 0 0 1.1rem;
+  color: #217632;
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.install-hero h2,
+.install-content h2,
+.install-options h2 {
+  margin: 0;
+  color: #111820;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+.install-hero h2 {
+  max-width: 16ch;
+  font-size: clamp(2.25rem, 4.4vw, 4.15rem);
+  font-weight: 760;
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
+.install-hero__copy > p:not(.install-section-label):not(.install-download-note) {
+  max-width: 37rem;
+  margin: 1.25rem 0 0;
+  color: #3c4852;
+  font-size: clamp(1rem, 1.25vw, 1.12rem);
+  line-height: 1.7;
+}
+
+.install-section-label {
+  margin: 0 0 0.9rem;
+  color: #217632;
+  font-size: 0.74rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.install-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  margin-top: 2rem;
+}
+
+.install-button {
+  min-height: 3.15rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.62rem;
+  padding: 0.82rem 1.15rem;
+  border: 1px solid #26823a;
+  border-radius: 0.4rem;
+  font: inherit;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  transition: transform 160ms ease, filter 160ms ease, background 160ms ease;
+}
+
+.install-button img {
+  width: 1.25rem;
+  height: 1.25rem;
+  filter: brightness(0);
+}
+
+.install-button--primary {
+  color: #071209;
+  background: linear-gradient(180deg, #91ec62 0%, #69cf3b 100%);
+  box-shadow:
+    0 3px 0 #236d28,
+    0 9px 20px rgba(20, 70, 26, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.install-button--secondary {
+  color: #1c682b;
+  background: #ffffff;
+  box-shadow: 0 3px 0 #c2d4c3, inset 0 1px 0 #ffffff;
+}
+
+.install-button:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+}
+
+.install-button:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #236d28, inset 0 2px 5px rgba(0, 0, 0, 0.12);
+}
+
+.install-button:focus-visible {
+  outline: 3px solid rgba(38, 130, 58, 0.28);
+  outline-offset: 4px;
+}
+
+.install-download-note {
+  max-width: 37rem;
+  margin: 1.1rem 0 0;
+  color: #667078;
+  font-size: 0.83rem;
+  line-height: 1.6;
+}
+
+.install-download-note code,
+.install-step code {
+  color: #185f27;
+  font: inherit;
+  overflow-wrap: anywhere;
+}
+
+.install-release-card {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  border: 1px solid #ced8ce;
+  border-radius: 0.5rem;
+  background: #f7faf6;
+  box-shadow: 0 12px 32px rgba(25, 43, 29, 0.09);
+}
+
+.install-release-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #dce4dc;
+  color: #42504a;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.install-release-card__header strong {
+  padding: 0.28rem 0.45rem;
+  border: 1px solid #9acaa1;
+  border-radius: 999px;
+  color: #1d6b2c;
+  background: #e8f5e8;
+  font-size: 0.63rem;
+}
+
+.install-release-card__body {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.35rem 1rem 1.2rem;
+}
+
+.install-release-card__body .install-release-mompy {
+  width: 3.25rem;
+  height: 3.25rem;
+  padding: 0.3rem;
+  border: 1px solid #b9d8bc;
+  border-radius: 0.35rem;
+  background: #e7f4e7;
+  object-fit: contain;
+  filter: none;
+}
+
+.install-release-card h3,
+.install-release-card p {
+  margin: 0;
+}
+
+.install-release-card h3 {
+  color: #172019;
+  font-size: 1.2rem;
+}
+
+.install-release-card p {
+  margin-top: 0.32rem;
+  color: #5c6861;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.install-release-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+  border-top: 1px solid #dce4dc;
+}
+
+.install-release-details div {
+  min-width: 0;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #e3e9e3;
+}
+
+.install-release-details div:nth-child(odd) {
+  border-right: 1px solid #e3e9e3;
+}
+
+.install-release-details dt,
+.install-release-details dd {
+  margin: 0;
+}
+
+.install-release-details dt {
+  color: #68746c;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+}
+
+.install-release-details dd {
+  margin-top: 0.32rem;
+  color: #1f2a22;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+.install-content {
+  padding: clamp(3.5rem, 6vw, 5rem) 0;
+  border-bottom: 1px solid #dfe5dc;
+}
+
+.install-content__intro {
+  max-width: 48rem;
+}
+
+.install-content h2,
+.install-options h2 {
+  font-size: clamp(1.7rem, 3vw, 2.8rem);
+  font-weight: 760;
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
+.install-content__intro > p:last-child,
+.install-options p:last-of-type {
+  max-width: 52rem;
+  margin: 1rem 0 0;
+  color: #526069;
+  line-height: 1.7;
+}
+
+.install-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin-top: 2rem;
+  padding: 0;
+  border: 1px solid #d9e1d9;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  list-style: none;
+}
+
+.install-step {
+  min-height: 9.5rem;
+  display: flex;
+  gap: 1rem;
+  padding: 1.4rem;
+  border-right: 1px solid #d9e1d9;
+  background: #f8faf7;
+}
+
+.install-step:last-child {
+  border-right: 0;
+}
+
+.install-step > span {
+  color: #247432;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.install-step h3 {
+  margin: 0;
+  color: #172019;
+  font-size: 1.05rem;
+}
+
+.install-step p {
+  margin: 0.55rem 0 0;
+  color: #5a6660;
+  font-size: 0.84rem;
+  line-height: 1.65;
+}
+
+.install-options {
+  padding: clamp(3.5rem, 6vw, 5rem) 0 0;
+}
+
+.install-options__heading {
+  position: relative;
+  z-index: 1;
+  max-width: 38rem;
+}
+
+.install-option-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.install-option-card {
+  min-height: 13rem;
+  padding: 1.45rem;
+  border: 1px solid #d7dfd7;
+  border-radius: 0.45rem;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(26, 43, 30, 0.055);
+}
+
+.install-option-card--pending {
+  background: #f7f9f6;
+}
+
+.install-option-card--available {
+  border-top: 3px solid #3f9d4d;
+}
+
+.install-option-card__topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.install-option-card__label {
+  margin: 0;
+  color: #236d31;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.install-option-card h3 {
+  margin: 0.8rem 0 0;
+  color: #18211a;
+  font-size: 1.18rem;
+}
+
+.install-option-card p:not(.install-option-card__label) {
+  max-width: 34rem;
+  margin: 0.72rem 0 0;
+  color: #56625b;
+  font-size: 0.86rem;
+  line-height: 1.65;
+}
+
+.install-availability {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.75rem;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid #acd0b0;
+  border-radius: 999px;
+  color: #1c6a2a;
+  background: #e9f6e9;
+  font-size: 0.68rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.install-availability--pending {
+  border-color: #d3d9d3;
+  color: #6b746d;
+  background: #eef1ee;
+}
+
+.install-option-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 1.2rem;
+  margin-top: 1.15rem;
+}
+
+.install-text-link {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #1b6e2b;
+  text-decoration: none;
+  text-underline-offset: 0.2em;
+}
+
+.install-text-link:hover,
+.install-text-link:focus-visible {
+  color: #0d4e19;
+  text-decoration: underline;
+}
+
+.install-store-note {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 1.15rem 1.35rem;
+  border: 1px solid #d7dfd7;
+  border-radius: 0.45rem;
+  color: #58635c;
+  background: #f7f9f6;
+  font-size: 0.86rem;
+}
+
+.install-store-note strong {
+  color: #1d271f;
+}
+
+.install-footer {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem 1.4rem;
+  margin: 0 auto;
+  padding: 1.6rem 1rem 2.2rem;
+  border-top: 1px solid #dfe5dc;
+  color: #5d676f;
+  background: #f5f7f2;
+  font-size: 0.9rem;
+}
+
+.install-footer a {
+  color: #1d6b2c;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.install-footer a:hover,
+.install-footer a:focus-visible {
+  color: #0b4f1c;
+  text-decoration: underline;
+}
+
+@media (max-width: 900px) {
+  .install-main {
+    padding-top: 6.8rem;
+  }
+
+  .install-hero {
+    grid-template-columns: 1fr;
+    min-height: 0;
+    gap: 2rem;
+    padding-bottom: 3.5rem;
+  }
+
+  .install-hero h2 {
+    max-width: 100%;
+    font-size: clamp(2.2rem, 8vw, 3.6rem);
+  }
+
+  .install-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .install-step {
+    min-height: 0;
+    border-right: 0;
+    border-bottom: 1px solid #d9e1d9;
+  }
+
+  .install-step:last-child {
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .install-main {
+    padding-top: 5.4rem;
+  }
+
+  .install-masthead {
+    min-height: 19rem;
+    padding: 3.25rem 1rem;
+  }
+
+  .install-masthead h1 {
+    font-size: clamp(2.75rem, 16vw, 4.1rem);
+  }
+
+  .install-document {
+    width: min(100% - 1.25rem, 1120px);
+  }
+
+  .install-actions,
+  .install-button {
+    width: 100%;
+  }
+
+  .install-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .install-option-grid,
+  .install-release-details {
+    grid-template-columns: 1fr;
+  }
+
+  .install-option-card__topline,
+  .install-store-note {
+    align-items: flex-start;
+  }
+
+  .install-store-note {
+    grid-template-columns: 1fr;
+  }
+
+  .install-release-details div:nth-child(odd) {
+    border-right: 0;
+  }
+
+  .install-option-card__topline {
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .install-footer {
+    justify-content: flex-start;
+  }
+}
+
